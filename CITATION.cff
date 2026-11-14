@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "Если вы используете ruSyntax в исследованиях или программах, пожалуйста, сошлитесь на библиотеку."
+title: "ruSyntax, a fast dependency parser for Russian"
+type: software
+authors:
+  - family-names: Shkarin
+    given-names: Sergey
+    email: kouki.sergey@gmail.com
+repository-code: "https://github.com/SergeyShk/ruSyntax"
+license: MIT
+keywords:
+  - russian
+  - nlp
+  - syntax
+  - dependency parsing
+  - universal dependencies
+  - rust
+abstract: "ruSyntax is a dependency parser of Russian with a Rust core and a Python API: for every word of a sentence it finds the head and the Universal Dependencies relation. Work in progress."
