@@ -25,7 +25,7 @@ uv run pre-commit install   # хуки: линтеры на коммите, те
 Перед отправкой пул-реквеста должны проходить:
 
 ```bash
-make lint        # ruff check --fix, ruff format (код и Python в Markdown), mypy, cargo fmt, cargo clippy
+make lint        # ruff check --fix, ruff format (код и Python в Markdown), mypy, stubtest, cargo fmt, cargo clippy
 make test-cov    # pytest с примерами из докстрингов (doctest) и порогом покрытия, cargo test
 make docs-build  # mkdocs build --strict, если менялась документация
 ```

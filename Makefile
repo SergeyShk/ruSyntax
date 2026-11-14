@@ -1,4 +1,4 @@
-.PHONY: help uv deps lock lint ruff format mypy rust-lint test test-cov clean clean-build clean-pyc clean-test clean-rust build docs-build docs-serve docs-deploy
+.PHONY: help uv deps lock lint ruff format mypy rust-lint test test-cov clean clean-build clean-pyc clean-test clean-rust build docs-build docs-serve
 .DEFAULT_GOAL := help
 SRC_PATH := python
 TESTS_PATH := tests
@@ -35,17 +35,21 @@ ruff: deps ## Проверить и отформатировать код Python
 ifeq ($(MODE), ci)
 	uv run ruff check $(SRC_PATH) $(SCRIPTS_PATH) $(TESTS_PATH)
 	uv run ruff format $(SRC_PATH) $(SCRIPTS_PATH) $(TESTS_PATH) --check
+	git ls-files -z '*.md' | xargs -0 uv run ruff format --check
 else
 	uv run ruff check $(SRC_PATH) $(SCRIPTS_PATH) $(TESTS_PATH) --fix
 	uv run ruff format $(SRC_PATH) $(SCRIPTS_PATH) $(TESTS_PATH)
+	git ls-files -z '*.md' | xargs -0 uv run ruff format
 endif
 
 format: deps ## Отформатировать код
 	uv run ruff format $(SRC_PATH) $(SCRIPTS_PATH) $(TESTS_PATH)
+	git ls-files -z '*.md' | xargs -0 uv run ruff format
 	cargo fmt --all
 
-mypy: deps ## Проверить типы с помощью mypy
+mypy: deps ## Проверить типы с помощью mypy и заглушку типов модуля на Rust с помощью stubtest
 	uv run mypy
+	uv run python -m mypy.stubtest rusyntax._rusyntax
 
 rust-lint: uv ## Проверить код Rust с помощью rustfmt и clippy
 ifeq ($(MODE), ci)
@@ -91,6 +95,3 @@ docs-build: deps ## Собрать документацию
 
 docs-serve: deps ## Запустить сервер документации
 	uv run mkdocs serve
-
-docs-deploy: deps ## Задеплоить документацию
-	uv run mkdocs gh-deploy
