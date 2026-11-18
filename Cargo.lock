@@ -103,11 +103,11 @@ dependencies = [
 
 [[package]]
 name = "rusyntax"
-version = "0.1.0-dev.1"
+version = "0.1.0-dev.2"
 
 [[package]]
 name = "rusyntax-py"
-version = "0.1.0-dev.1"
+version = "0.1.0-dev.2"
 dependencies = [
  "pyo3",
  "rusyntax",
