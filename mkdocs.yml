@@ -63,6 +63,22 @@ plugins:
           name: English
           build: true
           site_description: "Fast Russian dependency parser written in Rust with a Python API"
+          theme:
+            palette:
+              - media: "(prefers-color-scheme: light)"
+                scheme: default
+                primary: blue
+                accent: blue
+                toggle:
+                  icon: material/weather-night
+                  name: Dark mode
+              - media: "(prefers-color-scheme: dark)"
+                scheme: slate
+                primary: blue
+                accent: blue
+                toggle:
+                  icon: material/weather-sunny
+                  name: Light mode
           nav_translations:
             Главная: Home
             О проекте: About

@@ -53,7 +53,7 @@
 <path d="M655.0 290.0L655.0 435.0" stroke="#1976d2" stroke-width="2"/>
 <path d="M649.0 434.4L661.0 434.4L655.0 444.0Z" fill="#1976d2"/>
 <rect x="470.0" y="444.0" width="370.0" height="44.0" rx="8" fill="#e3f2fd" stroke="#1976d2" stroke-width="1.5"/>
-<text x="655.0" y="470.9" font-size="14" fill="#263238" text-anchor="middle">линейный слой по [d<tspan baseline-shift="sub" font-size="70%">i</tspan>; h вершины] → 53 типов связи UD</text>
+<text x="655.0" y="470.9" font-size="14" fill="#263238" text-anchor="middle">линейный слой по [d<tspan baseline-shift="sub" font-size="70%">i</tspan>; h вершины] → 53 типа связи UD</text>
 <path d="M410 466L461 466" stroke="#1976d2" stroke-width="2"/>
 <path d="M470 466L460 460L460 472Z" fill="#1976d2"/>
 <text x="440.0" y="458.0" font-size="12" fill="#1976d2" text-anchor="middle">вершины</text>

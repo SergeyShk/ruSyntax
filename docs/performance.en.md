@@ -73,6 +73,6 @@ The `scripts/compare.py` script downloads the test parts of the treebanks, the C
 ``` bash
 rm -rf target/compare/wheels
 uvx maturin@1.15.0 build --release --locked -o target/compare/wheels
-uvx uv@0.13.5 run --with target/compare/wheels/rusyntax-*.whl --with rumorph==0.6.0 --with anyseg==0.3.1 \
+uvx uv@0.13.5 run --with target/compare/wheels/rusyntax-*.whl --with rumorph==0.6.0 --with anyseg==0.4.0 \
     scripts/compare.py target/compare
 ```
