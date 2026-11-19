@@ -44,13 +44,15 @@
     результаты), environment.json, таблицы tables.md и tables.en.md и разборы в pred/;
     `--skip quality` или `--skip speed` пропускает замер, `--report` строит таблицы
     из results.json. Версии пакетов закреплены в compare.py.lock. ruSyntax еще не опубликован
-    на PyPI: его колесо подается через `--with`, rumorph и anyseg приходят его зависимостями.
+    на PyPI: его колесо подается через `--with`, а rumorph и anyseg закрепляются там же (их версии
+    пишутся в results.json).
     Сборка `--with-editable` отладочная, ее скорость не показательна.
 
 Пример использования:
     rm -rf target/compare/wheels
     uvx maturin@1.15.0 build --release --locked -o target/compare/wheels
-    uvx uv@0.13.5 run --with target/compare/wheels/rusyntax-*.whl scripts/compare.py target/compare
+    uvx uv@0.13.5 run --with target/compare/wheels/rusyntax-*.whl --with rumorph==0.6.0 \\
+        --with anyseg==0.3.1 scripts/compare.py target/compare
 """
 
 import argparse

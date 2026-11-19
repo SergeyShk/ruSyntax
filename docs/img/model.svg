@@ -36,31 +36,30 @@
 <path d="M649.0 236.4L661.0 236.4L655.0 246.0Z" fill="#1976d2"/>
 <rect x="40.0" y="246.0" width="370.0" height="44.0" rx="8" fill="#e3f2fd" stroke="#1976d2" stroke-width="1.5"/>
 <text x="225.0" y="272.9" font-size="14" fill="#263238" text-anchor="middle">MLP вершины: 128 и 128</text>
-<rect x="470.0" y="246.0" width="370.0" height="44.0" rx="8" fill="#e3f2fd" stroke="#1976d2" stroke-width="1.5"/>
-<text x="655.0" y="272.9" font-size="14" fill="#263238" text-anchor="middle">MLP связи: 64 и 64</text>
 <path d="M225.0 290.0L225.0 303.0" stroke="#1976d2" stroke-width="2"/>
 <path d="M219.0 302.4L231.0 302.4L225.0 312.0Z" fill="#1976d2"/>
-<path d="M655.0 290.0L655.0 303.0" stroke="#1976d2" stroke-width="2"/>
-<path d="M649.0 302.4L661.0 302.4L655.0 312.0Z" fill="#1976d2"/>
 <rect x="40.0" y="312.0" width="370.0" height="44.0" rx="8" fill="#e3f2fd" stroke="#1976d2" stroke-width="1.5"/>
 <text x="225.0" y="338.9" font-size="14" fill="#263238" text-anchor="middle">биаффинная оценка s(i, j) = [d<tspan baseline-shift="sub" font-size="70%">i</tspan>; 1]<tspan baseline-shift="super" font-size="70%">T</tspan> W h<tspan baseline-shift="sub" font-size="70%">j</tspan></text>
-<rect x="470.0" y="312.0" width="370.0" height="44.0" rx="8" fill="#e3f2fd" stroke="#1976d2" stroke-width="1.5"/>
-<text x="655.0" y="338.9" font-size="14" fill="#263238" text-anchor="middle">линейный слой по [d<tspan baseline-shift="sub" font-size="70%">i</tspan>; h вершины]</text>
 <path d="M225.0 356.0L225.0 369.0" stroke="#1976d2" stroke-width="2"/>
 <path d="M219.0 368.4L231.0 368.4L225.0 378.0Z" fill="#1976d2"/>
-<path d="M655.0 356.0L655.0 369.0" stroke="#1976d2" stroke-width="2"/>
-<path d="M649.0 368.4L661.0 368.4L655.0 378.0Z" fill="#1976d2"/>
 <rect x="40.0" y="378.0" width="370.0" height="44.0" rx="8" fill="#e3f2fd" stroke="#1976d2" stroke-width="1.5"/>
 <text x="225.0" y="404.9" font-size="14" fill="#263238" text-anchor="middle">softmax по j: P(вершина j | слово i)</text>
-<rect x="470.0" y="378.0" width="370.0" height="44.0" rx="8" fill="#e3f2fd" stroke="#1976d2" stroke-width="1.5"/>
-<text x="655.0" y="404.9" font-size="14" fill="#263238" text-anchor="middle">53 типов связи UD</text>
 <path d="M225.0 422.0L225.0 435.0" stroke="#1976d2" stroke-width="2"/>
 <path d="M219.0 434.4L231.0 434.4L225.0 444.0Z" fill="#1976d2"/>
 <rect x="40.0" y="444.0" width="370.0" height="44.0" rx="8" fill="#e3f2fd" stroke="#1976d2" stroke-width="1.5"/>
 <text x="225.0" y="470.9" font-size="14" fill="#263238" text-anchor="middle">Чу - Лю - Эдмондс: дерево с одним корнем</text>
+<rect x="470.0" y="246.0" width="370.0" height="44.0" rx="8" fill="#e3f2fd" stroke="#1976d2" stroke-width="1.5"/>
+<text x="655.0" y="272.9" font-size="14" fill="#263238" text-anchor="middle">MLP связи: 64 и 64</text>
+<path d="M655.0 290.0L655.0 435.0" stroke="#1976d2" stroke-width="2"/>
+<path d="M649.0 434.4L661.0 434.4L655.0 444.0Z" fill="#1976d2"/>
+<rect x="470.0" y="444.0" width="370.0" height="44.0" rx="8" fill="#e3f2fd" stroke="#1976d2" stroke-width="1.5"/>
+<text x="655.0" y="470.9" font-size="14" fill="#263238" text-anchor="middle">линейный слой по [d<tspan baseline-shift="sub" font-size="70%">i</tspan>; h вершины] → 53 типов связи UD</text>
+<path d="M410 466L461 466" stroke="#1976d2" stroke-width="2"/>
+<path d="M470 466L460 460L460 472Z" fill="#1976d2"/>
+<text x="440.0" y="458.0" font-size="12" fill="#1976d2" text-anchor="middle">вершины</text>
 <path d="M225.0 488.0L225.0 507.0" stroke="#1976d2" stroke-width="2"/>
 <path d="M219.0 506.4L231.0 506.4L225.0 516.0Z" fill="#1976d2"/>
-<path d="M655.0 422.0L655.0 507.0" stroke="#1976d2" stroke-width="2"/>
+<path d="M655.0 488.0L655.0 507.0" stroke="#1976d2" stroke-width="2"/>
 <path d="M649.0 506.4L661.0 506.4L655.0 516.0Z" fill="#1976d2"/>
 <rect x="40.0" y="516.0" width="800.0" height="44.0" rx="8" fill="#1976d2" stroke="#1976d2" stroke-width="1.5"/>
 <text x="440.0" y="543.2" font-size="15" fill="white" text-anchor="middle">вершина и тип связи каждого слова · 2,5 млн параметров, int8 по строкам</text>

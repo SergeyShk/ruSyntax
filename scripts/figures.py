@@ -248,6 +248,7 @@ TEXTS = {
             ("softmax по j: P(вершина j | слово i)", "{labels} типов связи UD"),
             "Чу - Лю - Эдмондс: дерево с одним корнем",
             "вершина и тип связи каждого слова · {params} млн параметров, int8 по строкам",
+            "вершины",
         ),
         "heads": (
             "Слово",
@@ -314,6 +315,7 @@ TEXTS = {
             ("softmax over j: P(head j | word i)", "{labels} UD relations"),
             "Chu - Liu - Edmonds: a tree with one root",
             "the head and relation of every word · {params} million parameters, int8 by rows",
+            "heads",
         ),
         "heads": (
             "Word",
@@ -382,7 +384,8 @@ def arcs(
     """Дуги от вершины к зависимому над строкой слов (строка - на y = 0); высота - по длине связи"""
     rel = TEXTS[lang]["rel"]
     xs, total = layout(words, lang, size, 34, x0)
-    body, top = [], 0.0
+    # Сначала все дуги, потом подписи: иначе длинная дуга перечеркнет подпись короткой
+    body, labels, top = [], [], 0.0
     order = sorted(range(len(words)), key=lambda i: abs(words[i]["head"] - 1 - i))
     for i in order:
         w = words[i]
@@ -401,13 +404,13 @@ def arcs(
         body.append(arrow(x2, y))
         name = rel.get(w["deprel"], w["deprel"])
         mx, my = (x1 + x2) / 2, cy + 0.25 * height - 6
-        body.append(
+        labels.append(
             f'<rect x="{mx - width(name, 13) / 2 - 4:.1f}" y="{my - 14:.1f}" '
             f'width="{width(name, 13) + 8:.1f}" height="30" rx="5" fill="white"/>'
         )
-        body.append(text(mx, my, name, 13, DARK, True))
-        body.append(text(mx, my + 12, w["deprel"], 10, MUTED))
-    return body, xs, total, top
+        labels.append(text(mx, my, name, 13, DARK, True))
+        labels.append(text(mx, my + 12, w["deprel"], 10, MUTED))
+    return body + labels, xs, total, top
 
 
 def draw_arcs(words: list[dict], lang: str) -> None:
@@ -517,15 +520,21 @@ def draw_model(model: Numpy, lang: str, labels: int, params: float) -> None:
     body += box(40, 172, 800, 44, t[2].format(**fmt), DARK, "white", 16)
     left, right = 40, 470
     body += down(left + 185, 216, 246) + down(right + 185, 216, 246)
-    rows = [(t[3], 246), (t[4], 312), (t[5], 378)]
-    for pair, y in rows:
-        body += box(left, y, 370, 44, pair[0].format(**fmt), size=14)
-        body += box(right, y, 370, 44, pair[1].format(**fmt), size=14)
-        if y < 378:
-            body += down(left + 185, y + 44, y + 66) + down(right + 185, y + 44, y + 66)
-    body += down(left + 185, 422, 444)
-    body += box(left, 444, 370, 44, t[6], size=14)
-    body += down(left + 185, 488, 516) + down(right + 185, 422, 516)
+    for k, y in enumerate((246, 312, 378, 444)):
+        label = t[3 + k][0] if k < 3 else t[6]
+        body += box(left, y, 370, 44, label.format(**fmt), size=14)
+        if k < 3:
+            body += down(left + 185, y + 44, y + 66)
+    # Связь считается для вершин дерева: линейный слой - рядом с деревом, вершины приходят из него
+    body += box(right, 246, 370, 44, t[3][1].format(**fmt), size=14)
+    body += down(right + 185, 290, 444)
+    body += box(right, 444, 370, 44, f"{t[4][1]} → {t[5][1].format(**fmt)}", size=14)
+    body += [
+        f'<path d="M{left + 370} 466L{right - 9} 466" stroke="{DARK}" stroke-width="2"/>',
+        f'<path d="M{right} 466L{right - 10} 460L{right - 10} 472Z" fill="{DARK}"/>',
+        text((left + 370 + right) / 2, 458, t[8], 12, DARK),
+    ]
+    body += down(left + 185, 488, 516) + down(right + 185, 488, 516)
     body += box(40, 516, 800, 44, t[7].format(**fmt), DARK, "white", 15)
     save("model", lang, w, 580, body)
 

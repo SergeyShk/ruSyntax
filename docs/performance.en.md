@@ -64,14 +64,15 @@ Parsing the gold tokens of SynTagRus test (157,706 words) in one thread, the bes
 | Stanza accurate | 404 | 4.05 | 5,981 |
 | Slovnet (Natasha) | 56,161 | 0.24 | 362 |
 
-Slovnet is faster, but picks heads without a tree, gives no morphology and is 5 to 31 points behind in LAS. Stanza accurate was measured on the first 20,006 words. The memory peak depends on the amount of text per call: every system got all of SynTagRus test in one call. Measured on an Apple M3 Pro, Python 3.11, load average 4-6 (other processes were running on the machine).
+Slovnet is faster, but picks heads without a tree, gives no morphology and is 5 to 31 points behind in LAS. Stanza accurate was measured on the first 20,006 words. The memory peak depends on the amount of text per call: every system except Stanza accurate got all of SynTagRus test in one call, so its peak is not comparable with the others. Measured on an Apple M3 Pro, Python 3.11, load average 4-6 (other processes were running on the machine).
 
 ## Reproducing { #reproduce }
 
-The `scripts/compare.py` script downloads the test parts of the treebanks, the CoNLL 2018 evaluation script and the models of the other parsers with a SHA-256 check (the Stanza models with its downloader and a check of the file sums), parses the treebanks with every system, computes the metrics and the speed in a separate process per system and writes the tables. The package versions are pinned in `scripts/compare.py.lock`; ruSyntax comes from a wheel built from the repository:
+The `scripts/compare.py` script downloads the test parts of the treebanks, the CoNLL 2018 evaluation script and the models of the other parsers with a SHA-256 check (the Stanza models with its downloader and a check of the file sums), parses the treebanks with every system and computes the metrics, measures the speed, loading and memory in a separate process per system, and writes the tables. The package versions are pinned in `scripts/compare.py.lock`; ruSyntax comes from a wheel built from the repository, and ruMorph and anySeg are pinned in the command (their versions are written to the results):
 
 ``` bash
 rm -rf target/compare/wheels
 uvx maturin@1.15.0 build --release --locked -o target/compare/wheels
-uvx uv@0.13.5 run --with target/compare/wheels/rusyntax-*.whl scripts/compare.py target/compare
+uvx uv@0.13.5 run --with target/compare/wheels/rusyntax-*.whl --with rumorph==0.6.0 --with anyseg==0.3.1 \
+    scripts/compare.py target/compare
 ```
