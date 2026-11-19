@@ -8,8 +8,8 @@ version = "0.1.0.dev4"
 description = "Fast Russian dependency parser written in Rust with a Python API"
 readme = "README.md"
 requires-python = ">=3.11"
-license = "MIT"
-license-files = ["LICENSE.txt", "THIRD-PARTY-NOTICES.txt"]
+license = "MIT AND CC-BY-SA-4.0"
+license-files = ["LICENSE.txt", "LICENSE-MODEL.txt", "THIRD-PARTY-NOTICES.txt"]
 authors = [{ name = "Шкарин Сергей", email = "kouki.sergey@gmail.com" }]
 maintainers = [{ name = "Шкарин Сергей", email = "kouki.sergey@gmail.com" }]
 keywords = [
@@ -38,7 +38,7 @@ classifiers = [
     "Typing :: Typed",
     "Natural Language :: Russian",
 ]
-dependencies = []
+dependencies = ["anyseg>=0.3.1,<0.4", "rumorph>=0.6,<0.7"]
 
 [project.urls]
 Homepage = "https://github.com/SergeyShk/ruSyntax"
@@ -52,8 +52,6 @@ manifest-path = "crates/rusyntax-py/Cargo.toml"
 module-name = "rusyntax._rusyntax"
 python-source = "python"
 sdist-generator = "git"
-# Модель (CC BY-SA 4.0) в sdist не входит, пока ее нет в колесе: лицензия пакета - MIT
-exclude = [{ path = "data/**", format = "sdist" }]
 
 [tool.uv]
 cache-keys = [
@@ -61,6 +59,7 @@ cache-keys = [
     { file = "Cargo.toml" },
     { file = "Cargo.lock" },
     { file = "crates/**/*" },
+    { file = "data/ru-syntax.bin" },
 ]
 
 [dependency-groups]

@@ -205,10 +205,12 @@ jobs:
           version: "0.13.5"
           enable-cache: false
           python-version: ${{ matrix.python-version }}
+      # rusyntax - колесо этого прогона, его зависимости anyseg и rumorph - колеса из PyPI
       - name: Smoke test
-        run: >-
-          uv run --isolated --no-project --no-index --no-build --find-links dist --with rusyntax
-          python scripts/smoke.py ${{ github.event_name == 'push' && github.ref_name || '' }}
+        run: |
+          version=$(ls dist/*.whl | head -n 1 | sed -E 's|.*/rusyntax-([^-]+)-.*|\1|')
+          uv run --isolated --no-project --no-build --find-links dist --with "rusyntax==$version" \
+            python scripts/smoke.py ${{ github.event_name == 'push' && github.ref_name || '' }}
         shell: bash
 
   # Колеса musllinux - в образе musllinux: в нем есть Python 3.11, 3.14t и 3.15t
@@ -242,7 +244,8 @@ jobs:
           docker run --rm -v "$PWD:/w" -w /w -e VERSION "$IMAGE" sh -ec '
             for python in python3.11 python3.14t python3.15t; do
               "$python" -m venv "/tmp/$python"
-              "/tmp/$python/bin/pip" install --quiet --no-index --find-links dist rusyntax
+              version=$(ls dist/*.whl | head -n 1 | sed -E "s|.*/rusyntax-([^-]+)-.*|\1|")
+              "/tmp/$python/bin/pip" install --quiet --only-binary :all: --find-links dist "rusyntax==$version"
               "/tmp/$python/bin/python" scripts/smoke.py $VERSION
             done'
 
@@ -276,9 +279,10 @@ jobs:
           cd build/*/
           uvx maturin@1.15.0 build --release --locked --out ../../wheel
       - name: Smoke test
-        run: >-
-          uv run --isolated --no-project --no-index --no-build --find-links wheel --with rusyntax
-          python scripts/smoke.py ${{ github.event_name == 'push' && github.ref_name || '' }}
+        run: |
+          version=$(ls wheel/*.whl | head -n 1 | sed -E 's|.*/rusyntax-([^-]+)-.*|\1|')
+          uv run --isolated --no-project --no-build --find-links wheel --with "rusyntax==$version" \
+            python scripts/smoke.py ${{ github.event_name == 'push' && github.ref_name || '' }}
 
   # Крейт собирается из пакета при каждом прогоне, а публикуются только версии без .devN
   crates-check:
