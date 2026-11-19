@@ -85,7 +85,7 @@ def test_parse_errors(parser, args, error, message):
     [
         (5, TypeError, "Ожидается набор предложений, а не int"),
         (["abc"], TypeError, "Предложение 0 должно быть тройкой, а не str"),
-        ([(WORDS, UPOS)], ValueError, "не 2 элемента"),
+        ([(WORDS, UPOS)], ValueError, "получено элементов: 2"),
         ([(WORDS, UPOS, FEATS[:2])], ValueError, "признаков 2"),
     ],
 )
@@ -174,6 +174,27 @@ def test_annotate_bad_types(parser):
         parser.annotate(document)
 
 
+def test_surrogates(parser):
+    # Непарный суррогат пропускают anySeg и ruMorph - значит, и разбор
+    document = parser.parse_text("Мама \ud800 мыла раму.")
+    assert len(document.column("head")) == len(document.column("form"))
+    assert is_tree(parser.parse(["Мама", "\ud800"], ["NOUN", "X"], ["_", "_"]))
+
+
+def test_annotate_generator_columns(parser):
+    document = FakeDocument([Sentence([0, 1, 2, 3])])
+    document.column = lambda name: iter({"form": WORDS, "upos": UPOS, "feats": FEATS}[name])
+    parser.annotate(document)
+    assert len(document.columns["head"]) == 4
+
+
+def test_annotate_huge_index(parser):
+    document = FakeDocument([Sentence([0, 1, 2, 3])])
+    document.sentences[0].words[0].index = 2**64
+    with pytest.raises(ValueError, match="не идут подряд"):
+        parser.annotate(document)
+
+
 def test_parse_text(parser):
     document = parser.parse_text("Мама мыла раму.")
     assert isinstance(document, Document)
@@ -197,13 +218,16 @@ def test_model_from_path(tmp_path, parser):
 
 
 def test_model_errors(tmp_path):
-    with pytest.raises(FileNotFoundError):
-        Parser(tmp_path / "нет.bin")
+    missing = tmp_path / "нет.bin"
+    with pytest.raises(FileNotFoundError, match="Нет файла модели") as error:
+        Parser(missing)
+    assert error.value.errno == 2
+    assert error.value.filename == str(missing)
     damaged = tmp_path / "damaged.bin"
     data = bytearray(MODEL.read_bytes())
     data[-1] ^= 1
     damaged.write_bytes(bytes(data))
-    with pytest.raises(ValueError, match="контрольная сумма не совпадает"):
+    with pytest.raises(ValueError, match=f"{damaged}: .*контрольная сумма не совпадает"):
         Parser(damaged)
     other = tmp_path / "other.bin"
     other.write_bytes(b"not a model")

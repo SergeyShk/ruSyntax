@@ -1,13 +1,30 @@
 import os
 from collections.abc import Iterable, Sequence
 from pathlib import Path
-from typing import Any, final
+from typing import Any, Protocol, final
 
 from anyseg import Document
 
 __all__ = ["Parser", "__version__"]
 
 __version__: str
+
+class _Word(Protocol):
+    @property
+    def index(self) -> int: ...
+
+class _Sentence(Protocol):
+    @property
+    def words(self) -> Iterable[_Word]: ...
+
+class _Document(Protocol):
+    # Документ anyseg.Document или объект с тем же интерфейсом
+    def column(self, name: str, /) -> Iterable[object]: ...
+    @property
+    def sentences(self) -> Iterable[_Sentence]: ...
+    def set_columns(
+        self, *, head: Sequence[int | None], deprel: Sequence[str | None]
+    ) -> object: ...
 
 @final
 class Parser:
@@ -27,5 +44,5 @@ class Parser:
     def parse_many(
         self, sentences: Iterable[tuple[Sequence[str], Sequence[str], Sequence[str | None]]]
     ) -> list[list[tuple[int, str]]]: ...
-    def annotate(self, document: Document) -> None: ...
+    def annotate(self, document: _Document) -> None: ...
     def parse_text(self, text: str) -> Document: ...

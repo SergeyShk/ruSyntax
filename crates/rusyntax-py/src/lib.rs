@@ -1,11 +1,12 @@
 //! Модуль Python `rusyntax._rusyntax`
 
-use std::path::PathBuf;
+use std::io::ErrorKind;
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, OnceLock};
 
-use pyo3::exceptions::{PyTypeError, PyValueError};
+use pyo3::exceptions::{PyOSError, PyTypeError, PyValueError};
 use pyo3::prelude::*;
-use pyo3::types::{PyDict, PyString, PyTuple};
+use pyo3::types::{PyDict, PyInt, PyString, PyTuple};
 use pyo3::{IntoPyObjectExt, intern};
 
 /// Модель пакета: веса `data/ru-syntax.bin` (CC BY-SA 4.0, LICENSE-MODEL.txt) вшиты в модуль
@@ -24,15 +25,44 @@ fn bundled() -> PyResult<Arc<rusyntax::Parser>> {
     if let Some(parser) = PARSER.get() {
         return Ok(parser.clone());
     }
-    let parser = Arc::new(rusyntax::Parser::from_bytes(MODEL).map_err(model_error)?);
+    let parser = rusyntax::Parser::from_bytes(MODEL)
+        .map_err(|err| PyValueError::new_err(format!("модель пакета: {err}")))?;
+    let parser = Arc::new(parser);
     Ok(PARSER.get_or_init(|| parser).clone())
 }
 
-fn model_error(err: rusyntax::Error) -> PyErr {
-    match err {
-        rusyntax::Error::Io(err) => err.into(),
-        err => PyValueError::new_err(err.to_string()),
+/// Ошибка загрузки модели с путем к файлу: OSError с errno и именем файла, как у open
+fn load_error(path: &Path, err: rusyntax::Error) -> PyErr {
+    let rusyntax::Error::Io(err) = err else {
+        return PyValueError::new_err(format!("{}: {err}", path.display()));
+    };
+    let message = match err.kind() {
+        ErrorKind::NotFound => "Нет файла модели".to_owned(),
+        ErrorKind::PermissionDenied => "Нет доступа к файлу модели".to_owned(),
+        ErrorKind::IsADirectory => "Путь к модели указывает на каталог".to_owned(),
+        _ => err.to_string(),
+    };
+    let filename = path.display().to_string();
+    match err.raw_os_error() {
+        #[cfg(windows)]
+        Some(code) => PyOSError::new_err((0, message, filename, code)),
+        #[cfg(not(windows))]
+        Some(errno) => PyOSError::new_err((errno, message, filename)),
+        None => PyOSError::new_err(format!("{message}: {filename}")),
     }
+}
+
+/// Строка Rust из строки Python; непарные суррогаты заменяются на U+FFFD
+fn lossy(text: &Bound<'_, PyString>) -> PyResult<String> {
+    if let Ok(text) = text.to_str() {
+        return Ok(text.to_owned());
+    }
+    let encoded = text.call_method1("encode", ("utf-16-le", "surrogatepass"))?;
+    let bytes = encoded.extract::<Vec<u8>>()?;
+    let units: Vec<u16> = (bytes.as_chunks::<2>().0.iter())
+        .map(|&pair| u16::from_le_bytes(pair))
+        .collect();
+    Ok(String::from_utf16_lossy(&units))
 }
 
 /// TypeError с типом полученного значения: «Слова должны быть набором, а не int»
@@ -63,15 +93,13 @@ fn strings(value: &Bound<'_, PyAny>, what: &str, none: Option<&str>) -> PyResult
             {
                 return Ok(none.to_owned());
             }
-            item.cast::<PyString>()
-                .map_err(|_| {
-                    type_error(
-                        &format!("{what}: элемент {number} должен быть строкой"),
-                        &item,
-                    )
-                })?
-                .to_str()
-                .map(str::to_owned)
+            let item = item.cast::<PyString>().map_err(|_| {
+                type_error(
+                    &format!("{what}: элемент {number} должен быть строкой"),
+                    &item,
+                )
+            })?;
+            lossy(item)
         })
         .collect()
 }
@@ -182,7 +210,7 @@ impl Parser {
             None => bundled()?,
             Some(path) => Arc::new(
                 py.detach(|| rusyntax::Parser::from_path(path))
-                    .map_err(model_error)?,
+                    .map_err(|err| load_error(path, err))?,
             ),
         };
         Ok(Parser {
@@ -319,7 +347,7 @@ impl Parser {
             };
             let [words, upos, feats] = parts.as_slice() else {
                 return Err(PyValueError::new_err(format!(
-                    "Предложение {number}: ожидается тройка (формы, части речи, признаки), а не {} элемента",
+                    "Предложение {number}: ожидается тройка (формы, части речи, признаки), получено элементов: {}",
                     parts.len()
                 )));
             };
@@ -356,17 +384,14 @@ impl Parser {
     fn annotate(&self, py: Python<'_>, document: &Bound<'_, PyAny>) -> PyResult<()> {
         let column = |name: &str| document.call_method1(intern!(py, "column"), (name,));
         let forms = strings(&column("form")?, "form", None)?;
-        let upos = column("upos")?;
-        if upos
-            .try_iter()?
-            .any(|value| value.is_ok_and(|value| value.is_none()))
-        {
+        // Столбец читается один раз: column может вернуть генератор
+        let upos = strings(&column("upos")?, "upos", Some(""))?;
+        if upos.iter().any(String::is_empty) {
             return Err(PyValueError::new_err(
                 "У слов документа нет частей речи: сначала разберите его морфологически, \
                  например rumorph.Analyzer().annotate(document)",
             ));
         }
-        let upos = strings(&upos, "upos", None)?;
         let feats = strings(&column("feats")?, "feats", Some("_"))?;
         if upos.len() != forms.len() || feats.len() != forms.len() {
             return Err(PyValueError::new_err("столбцы документа разной длины"));
@@ -385,11 +410,13 @@ impl Parser {
             for word in words {
                 if count == 0 {
                     let index = word?.getattr(intern!(py, "index"))?;
-                    start = index
-                        .extract::<isize>()
-                        .map_err(|_| type_error("Номер слова должен быть целым числом", &index))?
-                        .try_into()
-                        .map_err(|_| unordered())?;
+                    if !index.is_instance_of::<PyInt>() {
+                        return Err(type_error("Номер слова должен быть целым числом", &index));
+                    }
+                    // Целое вне диапазона - номер за пределами документа, а не ошибка типа
+                    start = (index.extract::<isize>().ok())
+                        .and_then(|index| usize::try_from(index).ok())
+                        .ok_or_else(unordered)?;
                 }
                 count += 1;
             }
@@ -433,6 +460,9 @@ impl Parser {
     ///
     /// Вывод:
     ///     anyseg.Document: Документ со столбцами lemma, upos, feats, head и deprel
+    ///
+    /// Исключения:
+    ///     TypeError: Если текст не строка
     ///
     /// Пример использования:
     ///     >>> document = Parser().parse_text("Мама мыла раму.")
