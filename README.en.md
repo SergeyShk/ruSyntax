@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/SergeyShk/ruSyntax/master/docs/img/rusyntax.png" alt="ruSyntax" width="480">
+</p>
+
 <h1 align="center">ruSyntax</h1>
 
 <p align="center">
@@ -45,6 +49,19 @@ print([(word.form, word.head, word.deprel) for word in document.words])
 
 `parse_text` splits the text into sentences and words with the [anySeg](https://github.com/SergeyShk/anySeg) segmenter, tags the words with the part of speech and features of the [ruMorph](https://github.com/SergeyShk/ruMorph) morphological analyzer and finds the head (the word number from 1, 0 for the root) and the relation of every word. `parser.annotate(document)` parses an anySeg document that already has its morphology, `parser.parse(words, upos, feats)` parses a sentence with your own parts of speech and features, and `parser.parse_many(sentences)` parses many sentences at once.
 
+## Quality and speed
+
+LAS from raw text on the test parts of the UD 2.19 treebanks (CoNLL 2018 script), %:
+
+| System | SynTagRus | Taiga | GSD | PUD | Poetry | Words/s |
+| :----- | --------: | ----: | --: | --: | -----: | ------: |
+| ruSyntax | 87.8 | **81.5** | **84.9** | 87.8 | **83.3** | 28,702 |
+| spaCy ru_core_news_sm | 81.8 | 71.5 | 75.8 | 86.2 | 65.1 | 10,426 |
+| Stanza | 91.2 | 77.6 | 78.0 | 88.2 | 73.4 | 1,152 |
+| Stanza accurate | **93.1** | 80.5 | 81.2 | **89.5** | 76.4 | 404 |
+
+The Stanza models are trained on SynTagRus, the ruSyntax model on Taiga, GSD and Poetry. The speed is one thread, with the morphology; other systems, metrics and measurement conditions are on the [Comparison](https://sergeyshk.github.io/ruSyntax/en/performance/) page.
+
 ## Development
 
 The project uses [uv](https://docs.astral.sh/uv/) to manage dependencies, [maturin](https://www.maturin.rs/) to build the Rust module and [ruff](https://docs.astral.sh/ruff/) for linting and formatting. [Rust](https://www.rust-lang.org/tools/install) 1.88 or newer is required.
@@ -81,7 +98,7 @@ Bug reports, ideas and pull requests are welcome - the [issues](https://github.c
 *   **docs** - MkDocs documentation in Russian and English
 *   **tests** - tests of the Python package
 *   **data** - the model and the check of its Rust forward pass against PyTorch
-*   **scripts** - the export of the UD treebanks and the training of the model, the check of the installed package and the licenses of the crates of the module
+*   **scripts** - the export of the UD treebanks and the training of the model, the comparison with other parsers, the documentation pictures, the check of the installed package and the licenses of the crates of the module
 
 </details>
 

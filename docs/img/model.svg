@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 580" width="880" height="580" font-family="PT Sans, Source Sans Pro, Arial, sans-serif" role="img">
+<rect width="880" height="580" rx="12" fill="white"/>
+<rect x="40.0" y="20.0" width="185.0" height="54.0" rx="8" fill="white" stroke="#1976d2" stroke-width="1.5"/>
+<text x="132.5" y="52.2" font-size="15" fill="#263238" text-anchor="middle"></text>
+<text x="132.0" y="43.0" font-size="15" fill="#263238" text-anchor="middle">форма</text>
+<text x="132.0" y="63.0" font-size="13" fill="#78909c" text-anchor="middle">64</text>
+<path d="M132.0 74.0L132.0 95.0" stroke="#1976d2" stroke-width="2"/>
+<path d="M126.0 94.4L138.0 94.4L132.0 104.0Z" fill="#1976d2"/>
+<rect x="245.0" y="20.0" width="185.0" height="54.0" rx="8" fill="white" stroke="#1976d2" stroke-width="1.5"/>
+<text x="337.5" y="52.2" font-size="15" fill="#263238" text-anchor="middle"></text>
+<text x="337.0" y="43.0" font-size="15" fill="#263238" text-anchor="middle">окончания 1-4</text>
+<text x="337.0" y="63.0" font-size="13" fill="#78909c" text-anchor="middle">4 × 16</text>
+<path d="M337.0 74.0L337.0 95.0" stroke="#1976d2" stroke-width="2"/>
+<path d="M331.0 94.4L343.0 94.4L337.0 104.0Z" fill="#1976d2"/>
+<rect x="450.0" y="20.0" width="185.0" height="54.0" rx="8" fill="white" stroke="#1976d2" stroke-width="1.5"/>
+<text x="542.5" y="52.2" font-size="15" fill="#263238" text-anchor="middle"></text>
+<text x="542.0" y="43.0" font-size="15" fill="#263238" text-anchor="middle">UPOS</text>
+<text x="542.0" y="63.0" font-size="13" fill="#78909c" text-anchor="middle">50</text>
+<path d="M542.0 74.0L542.0 95.0" stroke="#1976d2" stroke-width="2"/>
+<path d="M536.0 94.4L548.0 94.4L542.0 104.0Z" fill="#1976d2"/>
+<rect x="655.0" y="20.0" width="185.0" height="54.0" rx="8" fill="white" stroke="#1976d2" stroke-width="1.5"/>
+<text x="747.5" y="52.2" font-size="15" fill="#263238" text-anchor="middle"></text>
+<text x="747.0" y="43.0" font-size="15" fill="#263238" text-anchor="middle">признаки</text>
+<text x="747.0" y="63.0" font-size="13" fill="#78909c" text-anchor="middle">Σ 50</text>
+<path d="M747.0 74.0L747.0 95.0" stroke="#1976d2" stroke-width="2"/>
+<path d="M741.0 94.4L753.0 94.4L747.0 104.0Z" fill="#1976d2"/>
+<rect x="40.0" y="104.0" width="800.0" height="40.0" rx="8" fill="#e3f2fd" stroke="#1976d2" stroke-width="1.5"/>
+<text x="440.0" y="129.2" font-size="15" fill="#263238" text-anchor="middle">вектор слова: 228</text>
+<path d="M440.0 144.0L440.0 163.0" stroke="#1976d2" stroke-width="2"/>
+<path d="M434.0 162.4L446.0 162.4L440.0 172.0Z" fill="#1976d2"/>
+<rect x="40.0" y="172.0" width="800.0" height="44.0" rx="8" fill="#1976d2" stroke="#1976d2" stroke-width="1.5"/>
+<text x="440.0" y="199.6" font-size="16" fill="white" text-anchor="middle">BiLSTM 2 × 128, в обе стороны: 256 на слово</text>
+<path d="M225.0 216.0L225.0 237.0" stroke="#1976d2" stroke-width="2"/>
+<path d="M219.0 236.4L231.0 236.4L225.0 246.0Z" fill="#1976d2"/>
+<path d="M655.0 216.0L655.0 237.0" stroke="#1976d2" stroke-width="2"/>
+<path d="M649.0 236.4L661.0 236.4L655.0 246.0Z" fill="#1976d2"/>
+<rect x="40.0" y="246.0" width="370.0" height="44.0" rx="8" fill="#e3f2fd" stroke="#1976d2" stroke-width="1.5"/>
+<text x="225.0" y="272.9" font-size="14" fill="#263238" text-anchor="middle">MLP вершины: 128 и 128</text>
+<rect x="470.0" y="246.0" width="370.0" height="44.0" rx="8" fill="#e3f2fd" stroke="#1976d2" stroke-width="1.5"/>
+<text x="655.0" y="272.9" font-size="14" fill="#263238" text-anchor="middle">MLP связи: 64 и 64</text>
+<path d="M225.0 290.0L225.0 303.0" stroke="#1976d2" stroke-width="2"/>
+<path d="M219.0 302.4L231.0 302.4L225.0 312.0Z" fill="#1976d2"/>
+<path d="M655.0 290.0L655.0 303.0" stroke="#1976d2" stroke-width="2"/>
+<path d="M649.0 302.4L661.0 302.4L655.0 312.0Z" fill="#1976d2"/>
+<rect x="40.0" y="312.0" width="370.0" height="44.0" rx="8" fill="#e3f2fd" stroke="#1976d2" stroke-width="1.5"/>
+<text x="225.0" y="338.9" font-size="14" fill="#263238" text-anchor="middle">биаффинная оценка s(i, j) = [d<tspan baseline-shift="sub" font-size="70%">i</tspan>; 1]<tspan baseline-shift="super" font-size="70%">T</tspan> W h<tspan baseline-shift="sub" font-size="70%">j</tspan></text>
+<rect x="470.0" y="312.0" width="370.0" height="44.0" rx="8" fill="#e3f2fd" stroke="#1976d2" stroke-width="1.5"/>
+<text x="655.0" y="338.9" font-size="14" fill="#263238" text-anchor="middle">линейный слой по [d<tspan baseline-shift="sub" font-size="70%">i</tspan>; h вершины]</text>
+<path d="M225.0 356.0L225.0 369.0" stroke="#1976d2" stroke-width="2"/>
+<path d="M219.0 368.4L231.0 368.4L225.0 378.0Z" fill="#1976d2"/>
+<path d="M655.0 356.0L655.0 369.0" stroke="#1976d2" stroke-width="2"/>
+<path d="M649.0 368.4L661.0 368.4L655.0 378.0Z" fill="#1976d2"/>
+<rect x="40.0" y="378.0" width="370.0" height="44.0" rx="8" fill="#e3f2fd" stroke="#1976d2" stroke-width="1.5"/>
+<text x="225.0" y="404.9" font-size="14" fill="#263238" text-anchor="middle">softmax по j: P(вершина j | слово i)</text>
+<rect x="470.0" y="378.0" width="370.0" height="44.0" rx="8" fill="#e3f2fd" stroke="#1976d2" stroke-width="1.5"/>
+<text x="655.0" y="404.9" font-size="14" fill="#263238" text-anchor="middle">53 типов связи UD</text>
+<path d="M225.0 422.0L225.0 435.0" stroke="#1976d2" stroke-width="2"/>
+<path d="M219.0 434.4L231.0 434.4L225.0 444.0Z" fill="#1976d2"/>
+<rect x="40.0" y="444.0" width="370.0" height="44.0" rx="8" fill="#e3f2fd" stroke="#1976d2" stroke-width="1.5"/>
+<text x="225.0" y="470.9" font-size="14" fill="#263238" text-anchor="middle">Чу - Лю - Эдмондс: дерево с одним корнем</text>
+<path d="M225.0 488.0L225.0 507.0" stroke="#1976d2" stroke-width="2"/>
+<path d="M219.0 506.4L231.0 506.4L225.0 516.0Z" fill="#1976d2"/>
+<path d="M655.0 422.0L655.0 507.0" stroke="#1976d2" stroke-width="2"/>
+<path d="M649.0 506.4L661.0 506.4L655.0 516.0Z" fill="#1976d2"/>
+<rect x="40.0" y="516.0" width="800.0" height="44.0" rx="8" fill="#1976d2" stroke="#1976d2" stroke-width="1.5"/>
+<text x="440.0" y="543.2" font-size="15" fill="white" text-anchor="middle">вершина и тип связи каждого слова · 2,5 млн параметров, int8 по строкам</text>
+</svg>

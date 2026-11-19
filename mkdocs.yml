@@ -7,11 +7,15 @@ nav:
     - Главная:
       - О проекте: index.md
       - Установка: installation.md
+      - Модель: model.md
+      - Сравнение: performance.md
       - Авторы: authors.md
+    - Анализатор: parser.md
 
 theme:
   name: material
   language: ru
+  favicon: img/favicon.png
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
@@ -63,7 +67,10 @@ plugins:
             Главная: Home
             О проекте: About
             Установка: Installation
+            Модель: Model
+            Сравнение: Comparison
             Авторы: Authors
+            Анализатор: Parser
 
 extra:
   social:
