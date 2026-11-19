@@ -38,10 +38,9 @@ impl Dense {
     fn apply(&self, inputs: &[f32], count: usize) -> Vec<f32> {
         let mut out = vec![0.0f32; count * self.rows];
         self.weight.apply_all(inputs, &self.bias, &mut out);
+        // Без ветвления цикл векторизуется
         for value in &mut out {
-            if *value < 0.0 {
-                *value *= 0.1;
-            }
+            *value = if *value < 0.0 { *value * 0.1 } else { *value };
         }
         out
     }
@@ -67,9 +66,13 @@ impl Table {
     }
 
     fn number(&self, key: &str) -> usize {
+        self.number_or(key, UNKNOWN)
+    }
+
+    fn number_or(&self, key: &str, unknown: usize) -> usize {
         self.index
             .get(key)
-            .map_or(UNKNOWN, |&number| number as usize)
+            .map_or(unknown, |&number| number as usize)
     }
 
     fn row(&self, number: usize) -> &[f32] {
@@ -94,6 +97,9 @@ pub(crate) struct Model {
     words: Option<Table>,
     suffixes: Table,
     upos: Table,
+    /// Строка незнакомой части речи у слова: `X`, если он есть в словаре (строку неизвестного модель
+    /// видит только у корня)
+    unknown_upos: usize,
     feats: Table,
     lstm: Vec<[Lstm; 2]>,
     arc_dep: Dense,
@@ -107,6 +113,8 @@ pub(crate) struct Model {
     label: Tiled,
     label_bias: Vec<f32>,
     rel_dim: usize,
+    /// Номер связи `root`: она только у слова с вершиной 0, и у него только она
+    root: Option<usize>,
     pub relations: Vec<String>,
     pub sources: Option<String>,
 }
@@ -163,6 +171,7 @@ impl Model {
         };
         let suffixes = Table::read(&mut entries, "vocab.suffixes", "embed.suffix", suffix_dim)?;
         let upos = Table::read(&mut entries, "vocab.upos", "embed.upos", tag_dim)?;
+        let unknown_upos = upos.number("X");
         let feats = Table::read(&mut entries, "vocab.feats", "embed.feats", tag_dim)?;
         let mut lstm = Vec::with_capacity(layers);
         let mut din = word_dim + SUFFIXES * suffix_dim + 2 * tag_dim;
@@ -210,6 +219,7 @@ impl Model {
         }
         let label = Tiled::new(&entries.matrix("label.weight", relations.len(), 2 * rel_dim)?);
         let label_bias = entries.vector("label.bias", relations.len())?;
+        let root = relations.iter().position(|relation| relation == "root");
         let sources = entries.text("sources")?.map(str::to_owned);
         entries.finish()?;
         Ok(Model {
@@ -218,6 +228,7 @@ impl Model {
             words,
             suffixes,
             upos,
+            unknown_upos,
             feats,
             lstm,
             arc_dep,
@@ -230,6 +241,7 @@ impl Model {
             label,
             label_bias,
             rel_dim,
+            root,
             relations,
             sources,
         })
@@ -243,9 +255,10 @@ impl Model {
     }
 
     /// Вход BiLSTM: корень (строки неизвестного, без признаков) и слова - `(n + 1) × din`
-    fn embed(&self, words: &[Input<'_>]) -> Vec<f32> {
+    pub(crate) fn embed(&self, words: &[Input<'_>]) -> Vec<f32> {
         let din = self.input_dim();
         let mut x = vec![0.0f32; (words.len() + 1) * din];
+        let mut key = String::new();
         let mut row = |t: usize, word: Option<&Input<'_>>| {
             let mut out = &mut x[t * din..(t + 1) * din];
             let normal = word.map(|word| normalize(word.form));
@@ -255,20 +268,21 @@ impl Model {
                 head.copy_from_slice(table.row(number));
                 out = rest;
             }
-            let keys = normal.as_deref().map(suffix_keys);
-            for k in 0..SUFFIXES {
-                let number = keys
-                    .as_ref()
-                    .map_or(UNKNOWN, |keys| self.suffixes.number(&keys[k]));
+            let mut numbers = [UNKNOWN; SUFFIXES];
+            if let Some(form) = normal.as_deref() {
+                suffix_keys(form, &mut key, |k, key| {
+                    numbers[k] = self.suffixes.number(key)
+                });
+            }
+            for number in numbers {
                 let (head, rest) = std::mem::take(&mut out).split_at_mut(self.suffixes.rows.cols);
                 head.copy_from_slice(self.suffixes.row(number));
                 out = rest;
             }
             let (head, rest) = std::mem::take(&mut out).split_at_mut(self.upos.rows.cols);
-            head.copy_from_slice(
-                self.upos
-                    .row(word.map_or(UNKNOWN, |word| self.upos.number(word.upos))),
-            );
+            head.copy_from_slice(self.upos.row(word.map_or(UNKNOWN, |word| {
+                self.upos.number_or(word.upos, self.unknown_upos)
+            })));
             if let Some(word) = word {
                 for pair in feat_pairs(word.feats).take(self.max_feats) {
                     for (value, add) in rest.iter_mut().zip(self.feats.row(self.feats.number(pair)))
@@ -329,26 +343,57 @@ impl Model {
         (1..n)
             .zip(scores.chunks_exact(labels))
             .map(|(i, row)| {
-                let best = (0..labels).fold(0, |best, l| if row[l] > row[best] { l } else { best });
-                (heads[i], best)
+                let label = match self.root {
+                    Some(root) if heads[i] == 0 => root,
+                    root => best_label(row, root),
+                };
+                (heads[i], label)
             })
             .collect()
     }
 }
 
-/// Форма для словаря модели: строчные буквы, «ё» как «е»
-fn normalize(form: &str) -> String {
-    form.to_lowercase().replace('ё', "е")
+/// Связь с лучшей оценкой, кроме `skip` (если других связей нет - `skip`)
+fn best_label(row: &[f32], skip: Option<usize>) -> usize {
+    let mut best: Option<usize> = None;
+    for (label, &value) in row.iter().enumerate() {
+        if Some(label) != skip && best.is_none_or(|best| value > row[best]) {
+            best = Some(label);
+        }
+    }
+    best.or(skip).unwrap_or(0)
 }
 
-/// Ключи окончаний `k:окончание` длиной 1..=4 у формы с меткой начала «^»; у коротких форм - вся форма
-fn suffix_keys(normal: &str) -> [String; SUFFIXES] {
-    let chars: Vec<char> = std::iter::once('^').chain(normal.chars()).collect();
-    std::array::from_fn(|i| {
-        let k = i + 1;
-        let tail: String = chars[chars.len().saturating_sub(k)..].iter().collect();
-        format!("{k}:{tail}")
-    })
+/// Форма для словаря модели: строчные буквы, «ё» как «е»
+fn normalize(form: &str) -> String {
+    let lower = form.to_lowercase();
+    if lower.contains('ё') {
+        lower.replace('ё', "е")
+    } else {
+        lower
+    }
+}
+
+/// Ключи окончаний `k:окончание` длиной `k` = 1..=4 у формы с меткой начала «^» (у коротких форм - вся
+/// форма с меткой) по очереди в буфере `key`: `each(k - 1, ключ)`
+fn suffix_keys(normal: &str, key: &mut String, mut each: impl FnMut(usize, &str)) {
+    let mut starts = [None; SUFFIXES];
+    for (start, (at, _)) in starts.iter_mut().zip(normal.char_indices().rev()) {
+        *start = Some(at);
+    }
+    for (k, start) in starts.into_iter().enumerate() {
+        key.clear();
+        key.push(char::from(b'1' + k as u8));
+        key.push(':');
+        match start {
+            Some(at) => key.push_str(&normal[at..]),
+            None => {
+                key.push('^');
+                key.push_str(normal);
+            }
+        }
+        each(k, key);
+    }
 }
 
 /// Пары «признак=значение» из записи CoNLL-U `A=B|C=D`; `_` и пустая строка - без признаков
@@ -362,11 +407,29 @@ fn feat_pairs(feats: &str) -> impl Iterator<Item = &str> {
 mod tests {
     use super::*;
 
+    fn keys(normal: &str) -> Vec<String> {
+        let mut out = Vec::new();
+        suffix_keys(normal, &mut String::new(), |k, key| {
+            assert_eq!(k, out.len());
+            out.push(key.to_owned());
+        });
+        out
+    }
+
     #[test]
     fn suffixes_mark_word_start() {
-        assert_eq!(suffix_keys("я"), ["1:я", "2:^я", "3:^я", "4:^я"]);
-        assert_eq!(suffix_keys("дома"), ["1:а", "2:ма", "3:ома", "4:дома"]);
-        assert_eq!(suffix_keys(""), ["1:^", "2:^", "3:^", "4:^"]);
+        assert_eq!(keys("я"), ["1:я", "2:^я", "3:^я", "4:^я"]);
+        assert_eq!(keys("дома"), ["1:а", "2:ма", "3:ома", "4:дома"]);
+        assert_eq!(keys("домами"), ["1:и", "2:ми", "3:ами", "4:мами"]);
+        assert_eq!(keys(""), ["1:^", "2:^", "3:^", "4:^"]);
+    }
+
+    #[test]
+    fn root_label_only_at_root() {
+        let row = [0.0, 3.0, 1.0];
+        assert_eq!(best_label(&row, None), 1);
+        assert_eq!(best_label(&row, Some(1)), 2);
+        assert_eq!(best_label(&[5.0], Some(0)), 0);
     }
 
     #[test]

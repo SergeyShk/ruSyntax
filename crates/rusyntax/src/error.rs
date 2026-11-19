@@ -13,7 +13,7 @@ pub enum Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Error::Io(err) => write!(f, "{err}"),
+            Error::Io(err) => write!(f, "не удалось прочитать файл модели: {err}"),
             Error::Format(msg) => write!(f, "неверный формат модели: {msg}"),
         }
     }
