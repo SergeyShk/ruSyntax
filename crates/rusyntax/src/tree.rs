@@ -259,8 +259,24 @@ fn repair(mut heads: Vec<usize>, root_score: &[f32]) -> Vec<usize> {
         }
     }
     heads[root] = 0;
-    while let Some(cyc) = cycle(&heads) {
-        heads[cyc[0]] = root;
+    // Все циклы за один проход: узел, на котором путь замкнулся, подвешивается к корню. Пути с меньших
+    // номеров уже проверены и через этот узел не идут, поэтому циклы и порядок те же, что у поиска
+    // по одному циклу с начала, а время линейно
+    let mut color = vec![0u8; n];
+    let mut path = Vec::new();
+    for start in 1..n {
+        let mut v = start;
+        while v != 0 && color[v] == 0 {
+            color[v] = 1;
+            path.push(v);
+            v = heads[v];
+        }
+        if v != 0 && color[v] == 1 {
+            heads[v] = root;
+        }
+        for p in path.drain(..) {
+            color[p] = 2;
+        }
     }
     heads
 }
@@ -368,6 +384,50 @@ mod tests {
             })
             .expect("разбор в малом стеке");
         assert!(is_tree(&tree));
+    }
+
+    /// Прежняя починка: циклы по одному, каждый раз поиск с начала
+    fn repair_one_by_one(mut heads: Vec<usize>, root_score: &[f32]) -> Vec<usize> {
+        let root = repair(heads.clone(), root_score)
+            .iter()
+            .skip(1)
+            .position(|&h| h == 0)
+            .map_or(1, |at| at + 1);
+        for (d, head) in heads.iter_mut().enumerate().skip(1) {
+            if *head == 0 && d != root {
+                *head = root;
+            }
+        }
+        heads[root] = 0;
+        while let Some(cyc) = cycle(&heads) {
+            heads[cyc[0]] = root;
+        }
+        heads
+    }
+
+    #[test]
+    fn repair_in_one_pass_matches_one_by_one() {
+        let mut rng = Rng(11);
+        for trial in 0..3000 {
+            let n = 2 + trial % 40;
+            let heads: Vec<usize> = (0..n)
+                .map(|d| {
+                    if d == 0 {
+                        0
+                    } else {
+                        ((rng.next() + 2.0) / 4.0 * n as f32) as usize % n
+                    }
+                })
+                .collect();
+            let root_score: Vec<f32> = (0..n).map(|_| rng.next()).collect();
+            let tree = repair(heads.clone(), &root_score);
+            assert!(is_tree(&tree), "попытка {trial}");
+            assert_eq!(
+                tree,
+                repair_one_by_one(heads, &root_score),
+                "попытка {trial}"
+            );
+        }
     }
 
     #[test]
