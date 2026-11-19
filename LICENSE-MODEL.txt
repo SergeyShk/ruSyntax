@@ -1,0 +1,21 @@
+The model of ruSyntax (data/ru-syntax.bin) and the check file of its forward pass (data/check.conllu)
+are made from the training and development parts of the Universal Dependencies treebanks, release
+2.19 (https://universaldependencies.org), licensed under the Creative Commons Attribution-ShareAlike
+4.0 International License (CC BY-SA 4.0):
+
+- UD_Russian-Taiga (https://github.com/UniversalDependencies/UD_Russian-Taiga)
+  by Olga Lyashevskaya, Olga Rudina, Natalia Vlasova and Anna Zhuravleva;
+- UD_Russian-GSD (https://github.com/UniversalDependencies/UD_Russian-GSD),
+  annotated and converted by Google, by Ryan McDonald, Vitaly Nikolaev and
+  Olga Lyashevskaya;
+- UD_Russian-Poetry (https://github.com/UniversalDependencies/UD_Russian-Poetry)
+  by Olga Lyashevskaya, Natalia Vlasova and Dmitri Sitchinava.
+
+The part-of-speech tags and features the model is trained on are given by ruMorph
+(https://github.com/SergeyShk/ruMorph), whose dictionary is distributed under CC BY-SA 4.0.
+
+The ruSyntax model is an adaptation of that data and is distributed under the Creative Commons
+Attribution-ShareAlike 4.0 International License (CC BY-SA 4.0):
+https://creativecommons.org/licenses/by-sa/4.0/
+
+The ruSyntax code is distributed under the MIT License (LICENSE.txt).

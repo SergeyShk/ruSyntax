@@ -1,4 +1,4 @@
-.PHONY: help uv deps lock lint ruff format mypy rust-lint test test-cov clean clean-build clean-pyc clean-test clean-rust build docs-build docs-serve
+.PHONY: help uv deps lock model lint ruff format mypy rust-lint test test-cov clean clean-build clean-pyc clean-test clean-rust build docs-build docs-serve
 .DEFAULT_GOAL := help
 SRC_PATH := python
 TESTS_PATH := tests
@@ -28,6 +28,10 @@ endif
 lock: uv ## Обновить lock-файлы до последних версий зависимостей
 	uv lock --upgrade
 	cargo update
+
+model: uv ## Скачать трибанки UD и обучить модель: data/ru-syntax.bin и data/check.conllu
+	uv run python $(SCRIPTS_PATH)/export_ud.py target/ud
+	uv run $(SCRIPTS_PATH)/train.py target/ud --output data/ru-syntax.bin --check data/check.conllu
 
 lint: ruff mypy rust-lint ## Запустить все проверки кода
 

@@ -6,10 +6,12 @@ repos:
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
+        exclude: ^data/
       - id: check-yaml
         exclude: ^mkdocs\.yml$
       - id: check-toml
       - id: check-added-large-files
+        exclude: ^data/ru-syntax\.bin$
       - id: check-merge-conflict
 
   - repo: https://github.com/astral-sh/uv-pre-commit

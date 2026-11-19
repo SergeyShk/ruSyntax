@@ -13,3 +13,7 @@ repository = "https://github.com/SergeyShk/ruSyntax"
 [profile.release]
 lto = "fat"
 codegen-units = 1
+
+# Тест сверки разбирает файл настоящей моделью: без оптимизаций это минута вместо секунды
+[profile.test]
+opt-level = 3
