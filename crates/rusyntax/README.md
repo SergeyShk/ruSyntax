@@ -12,7 +12,7 @@
   дерево собирается быстрее: лишние корни и узлы циклов подвешиваются к лучшему корню.
 - Предложения близкой длины разбираются по четыре сразу: `Parser::parse_many`.
 
-Проект в разработке: веса модели появятся в следующих версиях, пока модель читается из файла.
+Проект в разработке. Модель - файл [`data/ru-syntax.bin`](https://github.com/SergeyShk/ruSyntax/blob/master/data/ru-syntax.bin) репозитория (CC BY-SA 4.0, [LICENSE-MODEL.txt](https://github.com/SergeyShk/ruSyntax/blob/master/LICENSE-MODEL.txt)): в крейт она не входит, анализатор читает ее из файла.
 
 ## Пример
 

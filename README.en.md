@@ -20,7 +20,7 @@
 **ruSyntax** is a dependency parser of Russian: a Rust core with a Python API. For every word of a sentence the parser finds its head and the relation between them in the [Universal Dependencies](https://universaldependencies.org/) annotation.
 
 > [!WARNING]
-> Work in progress: so far the package contains only the scaffolding; the analyzer comes in the next versions. Versions `0.1.0.devN` are published on TestPyPI.
+> Work in progress: the API may change until version 0.1.0. Versions `0.1.0.devN` are published on TestPyPI.
 
 ## Installation
 
@@ -31,6 +31,19 @@ pip install rusyntax
 ```
 
 Wheels are built for Linux, macOS and Windows; on other platforms building from source requires [Rust](https://www.rust-lang.org/tools/install). See the [Installation](https://sergeyshk.github.io/ruSyntax/en/installation/) page.
+
+## Usage
+
+```python
+from rusyntax import Parser
+
+parser = Parser()
+document = parser.parse_text("Мама мыла раму.")
+print([(word.form, word.head, word.deprel) for word in document.words])
+# [('Мама', 2, 'nsubj'), ('мыла', 0, 'root'), ('раму', 2, 'obj'), ('.', 2, 'punct')]
+```
+
+`parse_text` splits the text into sentences and words with the [anySeg](https://github.com/SergeyShk/anySeg) segmenter, tags the words with the part of speech and features of the [ruMorph](https://github.com/SergeyShk/ruMorph) morphological analyzer and finds the head (the word number from 1, 0 for the root) and the relation of every word. `parser.annotate(document)` parses an anySeg document that already has its morphology, `parser.parse(words, upos, feats)` parses a sentence with your own parts of speech and features, and `parser.parse_many(sentences)` parses many sentences at once.
 
 ## Development
 

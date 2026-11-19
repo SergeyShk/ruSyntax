@@ -20,7 +20,7 @@
 **ruSyntax** - синтаксический анализатор русского языка: ядро на Rust и API для Python. Для каждого слова предложения анализатор находит вершину и тип синтаксической связи в разметке [Universal Dependencies](https://universaldependencies.org/).
 
 > [!WARNING]
-> Проект в разработке: пакет пока содержит только каркас, анализатор появится в следующих версиях. Версии `0.1.0.devN` публикуются на TestPyPI.
+> Проект в разработке: до версии 0.1.0 API может меняться. Версии `0.1.0.devN` публикуются на TestPyPI.
 
 ## Установка
 
@@ -31,6 +31,19 @@ pip install rusyntax
 ```
 
 Колеса собираются для Linux, macOS и Windows; на других платформах для сборки из исходников нужен [Rust](https://www.rust-lang.org/tools/install). Подробнее - на странице [Установка](https://sergeyshk.github.io/ruSyntax/installation/).
+
+## Использование
+
+```python
+from rusyntax import Parser
+
+parser = Parser()
+document = parser.parse_text("Мама мыла раму.")
+print([(word.form, word.head, word.deprel) for word in document.words])
+# [('Мама', 2, 'nsubj'), ('мыла', 0, 'root'), ('раму', 2, 'obj'), ('.', 2, 'punct')]
+```
+
+`parse_text` делит текст на предложения и слова сегментатором [anySeg](https://github.com/SergeyShk/anySeg), ставит словам часть речи и признаки морфологическим анализатором [ruMorph](https://github.com/SergeyShk/ruMorph) и находит вершину (номер слова с 1, 0 - корень) и тип связи каждого слова. Документ anySeg, уже разобранный морфологически, разбирает `parser.annotate(document)`, предложение со своими частями речи и признаками - `parser.parse(words, upos, feats)`, много предложений сразу - `parser.parse_many(sentences)`.
 
 ## Разработка
 
