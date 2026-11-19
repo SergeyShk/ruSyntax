@@ -118,14 +118,14 @@ dependencies = [
 
 [[package]]
 name = "rusyntax"
-version = "0.1.0-dev.4"
+version = "0.1.0-dev.5"
 dependencies = [
  "crc32fast",
 ]
 
 [[package]]
 name = "rusyntax-py"
-version = "0.1.0-dev.4"
+version = "0.1.0-dev.5"
 dependencies = [
  "pyo3",
  "rusyntax",

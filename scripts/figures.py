@@ -245,7 +245,7 @@ TEXTS = {
                 + SUB.format("j"),
                 "линейный слой по [d" + SUB.format("i") + "; h вершины]",
             ),
-            ("softmax по j: P(вершина j | слово i)", "{labels} типов связи UD"),
+            ("softmax по j: P(вершина j | слово i)", "{labels} {types} связи UD"),
             "Чу - Лю - Эдмондс: дерево с одним корнем",
             "вершина и тип связи каждого слова · {params} млн параметров, int8 по строкам",
             "вершины",
@@ -312,7 +312,7 @@ TEXTS = {
                 + SUB.format("j"),
                 "linear layer over [d" + SUB.format("i") + "; h of the head]",
             ),
-            ("softmax over j: P(head j | word i)", "{labels} UD relations"),
+            ("softmax over j: P(head j | word i)", "{labels} UD {types}"),
             "Chu - Liu - Edmonds: a tree with one root",
             "the head and relation of every word · {params} million parameters, int8 by rows",
             "heads",
@@ -495,6 +495,17 @@ def down(x: float, y1: float, y2: float) -> list[str]:
     ]
 
 
+def types(lang: str, count: int) -> str:
+    """Слово «тип» или «relation» в согласовании с числом"""
+    if lang == "en":
+        return "relation" if count == 1 else "relations"
+    if count % 10 == 1 and count % 100 != 11:
+        return "тип"
+    if count % 10 in (2, 3, 4) and count % 100 not in (12, 13, 14):
+        return "типа"
+    return "типов"
+
+
 def draw_model(model: Numpy, lang: str, labels: int, params: float) -> None:
     c = model.config
     t = TEXTS[lang]["model"]
@@ -506,6 +517,7 @@ def draw_model(model: Numpy, lang: str, labels: int, params: float) -> None:
         "arc": c["arc_dim"],
         "rel": c["rel_dim"],
         "labels": labels,
+        "types": types(lang, labels),
         "params": f"{params:.1f}".replace(".", "," if lang == "ru" else "."),
     }
     w, body = 880, []

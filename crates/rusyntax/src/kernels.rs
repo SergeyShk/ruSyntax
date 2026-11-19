@@ -68,18 +68,39 @@ impl Tiled {
 
     #[inline(always)]
     fn apply_add_with<const FUSED: bool>(&self, input: &[f32], out: &mut [f32]) {
-        for (tile, columns) in self.columns.chunks_exact(self.cols).enumerate() {
-            let mut sums = [0.0f32; TILE];
-            for (column, &value) in columns.iter().zip(input) {
+        // Две плитки за проход: две независимые цепочки сумм не ждут друг друга; порядок сложений
+        // в каждой строке тот же, что по одной плитке
+        let mut tiles = self.columns.chunks_exact(self.cols).enumerate();
+        while let Some((tile, first)) = tiles.next() {
+            let Some((_, second)) = tiles.next() else {
+                let mut sums = [0.0f32; TILE];
+                for (column, &value) in first.iter().zip(input) {
+                    for j in 0..TILE {
+                        sums[j] = madd::<FUSED>(value, column[j], sums[j]);
+                    }
+                }
+                self.add_tile(tile, &sums, out);
+                break;
+            };
+            let (mut a, mut b) = ([0.0f32; TILE], [0.0f32; TILE]);
+            for ((ca, cb), &value) in first.iter().zip(second).zip(input) {
                 for j in 0..TILE {
-                    sums[j] = madd::<FUSED>(value, column[j], sums[j]);
+                    a[j] = madd::<FUSED>(value, ca[j], a[j]);
+                    b[j] = madd::<FUSED>(value, cb[j], b[j]);
                 }
             }
-            let start = tile * TILE;
-            let end = (start + TILE).min(self.rows);
-            for (out, sum) in out[start..end].iter_mut().zip(sums) {
-                *out += sum;
-            }
+            self.add_tile(tile, &a, out);
+            self.add_tile(tile + 1, &b, out);
+        }
+    }
+
+    /// `out` строк плитки `tile` += суммы
+    #[inline(always)]
+    fn add_tile(&self, tile: usize, sums: &[f32; TILE], out: &mut [f32]) {
+        let start = tile * TILE;
+        let end = (start + TILE).min(self.rows);
+        for (out, sum) in out[start..end].iter_mut().zip(sums) {
+            *out += sum;
         }
     }
 

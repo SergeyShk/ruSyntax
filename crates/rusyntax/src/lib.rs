@@ -4,7 +4,8 @@
 //! На входе - слова предложения с частью речи и признаками UD (например, от морфологического анализатора
 //! ruMorph), на выходе - номер вершины (0 - корень) и связь каждого слова. Модель - BiLSTM над словами
 //! и их тегами, вершины - биаффинная оценка и дерево максимального веса с одним корнем (у вырожденных
-//! и очень длинных предложений - быстрая починка лучших вершин), связи - по паре «зависимое - вершина».
+//! и очень длинных предложений - быстрая починка лучших вершин; у предложений длиннее 1024 слов вершина
+//! ищется среди 64 слов с каждой стороны), связи - по паре «зависимое - вершина».
 //! Модель читается из файла формата ruSyntax ([`Parser::from_bytes`]).
 //!
 //! ```no_run
@@ -25,6 +26,10 @@
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+#[cfg(doctest)]
+#[doc = include_str!("../README.md")]
+struct ReadmeDoctests;
+
 mod error;
 mod format;
 mod kernels;
@@ -38,12 +43,14 @@ pub use error::Error;
 use kernels::BATCH;
 use model::{Input, Model};
 
-/// Слово предложения с морфологией UD
+/// Слово предложения с морфологией UD; создается через [`Word::new`]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub struct Word<'a> {
     /// Форма слова, как в тексте
     pub form: &'a str,
-    /// Часть речи UD (`NOUN`, `VERB`, ...); незнакомая модели часть речи разбирается как неизвестная
+    /// Часть речи UD (`NOUN`, `VERB`, ...) - одна из 17, заглавными буквами; незнакомая модели часть речи
+    /// разбирается как `X`
     pub upos: &'a str,
     /// Признаки UD в записи CoNLL-U: `Case=Nom|Number=Sing`; `_` или пустая строка - без признаков
     pub feats: &'a str,
@@ -51,6 +58,7 @@ pub struct Word<'a> {
 
 impl<'a> Word<'a> {
     /// Слово из формы, части речи и признаков
+    #[must_use]
     pub fn new(form: &'a str, upos: &'a str, feats: &'a str) -> Self {
         Word { form, upos, feats }
     }
@@ -58,11 +66,15 @@ impl<'a> Word<'a> {
 
 /// Связь слова с вершиной
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub struct Relation<'p> {
     /// Номер вершины среди слов предложения с 1; 0 - корень предложения
     pub head: usize,
-    /// Тип связи UD с подтипом, если он есть (`nsubj`, `obl:tmod`, `root`, ...)
+    /// Тип связи UD с подтипом, если он есть (`nsubj`, `obl:tmod`, `root`, ...); `root` - только у слова
+    /// с вершиной 0
     pub deprel: &'p str,
+    /// Номер типа связи в [`Parser::relations`]
+    pub label: usize,
 }
 
 /// Синтаксический анализатор: модель в памяти. Разбор не меняет анализатор, поэтому один анализатор
@@ -104,22 +116,26 @@ impl Parser {
     }
 
     /// Типы связей, которые выдает модель
+    #[must_use]
     pub fn relations(&self) -> &[String] {
         &self.model.relations
     }
 
     /// Описание обучения модели (запись `sources` файла, JSON), если оно есть
+    #[must_use]
     pub fn sources(&self) -> Option<&str> {
         self.model.sources.as_deref()
     }
 
     /// Разбор предложения: связь каждого слова в том же порядке; у пустого предложения - пустой список
+    #[must_use]
     pub fn parse(&self, words: &[Word<'_>]) -> Vec<Relation<'_>> {
         self.parse_many(&[words]).pop().unwrap_or_default()
     }
 
     /// Разбор нескольких предложений: то же, что [`Parser::parse`] для каждого, но предложения близкой
     /// длины разбираются по четыре сразу - это быстрее
+    #[must_use]
     pub fn parse_many<'w, S: AsRef<[Word<'w>]>>(&self, sentences: &[S]) -> Vec<Vec<Relation<'_>>> {
         let mut out: Vec<Vec<Relation<'_>>> = vec![Vec::new(); sentences.len()];
         let mut order: Vec<usize> = (0..sentences.len())
@@ -145,6 +161,7 @@ impl Parser {
                     .map(|(head, label)| Relation {
                         head,
                         deprel: &self.model.relations[label],
+                        label,
                     })
                     .collect();
             }
@@ -208,8 +225,11 @@ mod tests {
                 Item::Strings(vec!["1:а", "2:ма", "1:у", "1:.", "2:^."]),
             ),
             ("embed.suffix", matrix(7, suffix_dim)),
-            ("vocab.upos", Item::Strings(vec!["NOUN", "VERB", "PUNCT"])),
-            ("embed.upos", matrix(5, tag_dim)),
+            (
+                "vocab.upos",
+                Item::Strings(vec!["NOUN", "VERB", "PUNCT", "X"]),
+            ),
+            ("embed.upos", matrix(6, tag_dim)),
             (
                 "vocab.feats",
                 Item::Strings(vec!["Case=Nom", "Case=Acc", "Number=Sing", "Gender=Fem"]),
@@ -303,7 +323,12 @@ mod tests {
                 let relations = parser.parse(&words);
                 assert_eq!(relations.len(), words.len());
                 assert!(words.is_empty() || is_tree(&relations), "{relations:?}");
-                assert!(relations.iter().all(|r| RELATIONS.contains(&r.deprel)));
+                assert!(relations.iter().all(|r| RELATIONS[r.label] == r.deprel));
+                assert!(
+                    relations
+                        .iter()
+                        .all(|r| (r.head == 0) == (r.deprel == "root"))
+                );
             }
         }
     }
@@ -408,9 +433,26 @@ mod tests {
 
     #[test]
     fn missing_file_is_io_error() {
-        assert!(matches!(
-            Parser::from_path("/нет/такого/файла.bin"),
-            Err(Error::Io(_))
-        ));
+        let err = Parser::from_path("/нет/такого/файла.bin").unwrap_err();
+        assert!(matches!(err, Error::Io(_)));
+        assert!(
+            err.to_string()
+                .starts_with("не удалось прочитать файл модели: ")
+        );
+    }
+
+    #[test]
+    fn unknown_upos_is_parsed_as_x() {
+        let parser = Parser::from_bytes(&model(1, 5, false)).unwrap();
+        let embed = |upos| {
+            (parser.model).embed(&[model::Input {
+                form: "мама",
+                upos,
+                feats: "_",
+            }])
+        };
+        assert_eq!(embed("noun"), embed("X"));
+        assert_eq!(embed("ADJ"), embed("X"));
+        assert_ne!(embed("NOUN"), embed("X"));
     }
 }

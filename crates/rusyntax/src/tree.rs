@@ -4,6 +4,8 @@
 //! максимального веса. Иначе - Чу - Лю - Эдмондс по логарифмам вероятностей вершин с перебором корня.
 //! Работа ограничена (`CONTRACTIONS` стягиваний циклов, `CANDIDATES` кандидатов в корень): сверх этого,
 //! как и у предложений длиннее `FULL` слов, лишние корни и узлы циклов подвешиваются к лучшему корню.
+//! У предложений длиннее `FULL` слов вершина ищется среди `WINDOW` слов с каждой стороны и корня: время
+//! растет линейно, а не квадратично.
 
 /// Длина предложения, до которой строится полная матрица оценок и ищется дерево максимального веса
 pub(crate) const FULL: usize = 1024;
@@ -11,6 +13,9 @@ pub(crate) const FULL: usize = 1024;
 const CONTRACTIONS: usize = 16;
 /// Сколько кандидатов в корень перебирается (на dev UD больше 2 не бывает)
 const CANDIDATES: usize = 8;
+/// Сколько слов с каждой стороны от зависимого - кандидаты в вершины у предложений длиннее `FULL` слов.
+/// В train UD дальше 64 слов - 0,04 % вершин; склейки предложений dev с окном разбираются точнее, чем без него
+pub(crate) const WINDOW: usize = 64;
 
 /// Оценка без NaN и бесконечностей: иначе сравнения ломают выбор лучшей вершины
 fn finite(value: f32) -> f32 {
@@ -207,13 +212,14 @@ fn max_pair(best: (usize, f64), next: (usize, f64)) -> (usize, f64) {
     if next.1 > best.1 { next } else { best }
 }
 
-/// Длинное предложение: лучшие вершины без полной матрицы, затем `repair`
+/// Длинное предложение: лучшие вершины среди корня и `WINDOW` слов с каждой стороны, затем `repair`
 fn long(n: usize, score: &impl Fn(usize, usize) -> f32) -> Vec<usize> {
     let mut heads = vec![0usize; n];
     let mut root_score = vec![f32::MIN; n];
     for d in 1..n {
         let mut best = (0, f32::NEG_INFINITY);
-        for h in 0..n {
+        let window = d.saturating_sub(WINDOW).max(1)..=(d + WINDOW).min(n - 1);
+        for h in std::iter::once(0).chain(window) {
             if h == d {
                 continue;
             }
@@ -253,8 +259,24 @@ fn repair(mut heads: Vec<usize>, root_score: &[f32]) -> Vec<usize> {
         }
     }
     heads[root] = 0;
-    while let Some(cyc) = cycle(&heads) {
-        heads[cyc[0]] = root;
+    // Все циклы за один проход: узел, на котором путь замкнулся, подвешивается к корню. Пути с меньших
+    // номеров уже проверены и через этот узел не идут, поэтому циклы и порядок те же, что у поиска
+    // по одному циклу с начала, а время линейно
+    let mut color = vec![0u8; n];
+    let mut path = Vec::new();
+    for start in 1..n {
+        let mut v = start;
+        while v != 0 && color[v] == 0 {
+            color[v] = 1;
+            path.push(v);
+            v = heads[v];
+        }
+        if v != 0 && color[v] == 1 {
+            heads[v] = root;
+        }
+        for p in path.drain(..) {
+            color[p] = 2;
+        }
     }
     heads
 }
@@ -364,11 +386,76 @@ mod tests {
         assert!(is_tree(&tree));
     }
 
+    /// Прежняя починка: циклы по одному, каждый раз поиск с начала
+    fn repair_one_by_one(mut heads: Vec<usize>, root_score: &[f32]) -> Vec<usize> {
+        let root = repair(heads.clone(), root_score)
+            .iter()
+            .skip(1)
+            .position(|&h| h == 0)
+            .map_or(1, |at| at + 1);
+        for (d, head) in heads.iter_mut().enumerate().skip(1) {
+            if *head == 0 && d != root {
+                *head = root;
+            }
+        }
+        heads[root] = 0;
+        while let Some(cyc) = cycle(&heads) {
+            heads[cyc[0]] = root;
+        }
+        heads
+    }
+
+    #[test]
+    fn repair_in_one_pass_matches_one_by_one() {
+        let mut rng = Rng(11);
+        for trial in 0..3000 {
+            let n = 2 + trial % 40;
+            let heads: Vec<usize> = (0..n)
+                .map(|d| {
+                    if d == 0 {
+                        0
+                    } else {
+                        ((rng.next() + 2.0) / 4.0 * n as f32) as usize % n
+                    }
+                })
+                .collect();
+            let root_score: Vec<f32> = (0..n).map(|_| rng.next()).collect();
+            let tree = repair(heads.clone(), &root_score);
+            assert!(is_tree(&tree), "попытка {trial}");
+            assert_eq!(
+                tree,
+                repair_one_by_one(heads, &root_score),
+                "попытка {trial}"
+            );
+        }
+    }
+
     #[test]
     fn argmax_tree_is_kept() {
         // Каждое слово лучше всего цепляется к предыдущему: это уже дерево
         let score = |d: usize, h: usize| if h + 1 == d { 5.0 } else { 0.0 };
         assert_eq!(heads(5, &score), [0, 0, 1, 2, 3]);
+    }
+
+    #[test]
+    fn long_sentence_looks_for_heads_in_window() {
+        let n = FULL + 500;
+        // Каждое слово лучше всего цепляется к первому слову, но у дальних оно за окном
+        let score = |d: usize, h: usize| match h {
+            0 => {
+                if d == 1 {
+                    1.0
+                } else {
+                    -10.0
+                }
+            }
+            1 => 5.0,
+            _ => -(d.abs_diff(h) as f32),
+        };
+        let tree = heads(n, &score);
+        assert!(is_tree(&tree));
+        assert!((2..=WINDOW + 1).all(|d| tree[d] == 1));
+        assert!((WINDOW + 2..n).all(|d| tree[d].abs_diff(d) == 1));
     }
 
     #[test]

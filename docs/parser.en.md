@@ -4,13 +4,14 @@
 Parser(path=None)
 ```
 
-A dependency parser: for every word of a sentence it finds the head - the word it depends on - and the [Universal Dependencies](https://universaldependencies.org/u/dep/) relation. The head is the number of a word in the sentence starting from 1; the root of the sentence has 0. Without `path` the package [model](model.md) is used: it is built into the module and loaded once per process (about 10 ms), so a new parser is created instantly.
+A dependency parser: for every word of a sentence it finds the head - the word it depends on - and the [Universal Dependencies](https://universaldependencies.org/u/dep/) relation. The head is the number of a word in the sentence starting from 1; the root of the sentence has 0. Without `path` the package [model](model.md) is used: it is built into the module and loaded once per process (about 10 ms), so a new parser is created instantly. Parsers share a model from a file too: while the file does not change, it is loaded once.
 
 Exceptions:
 
 - `FileNotFoundError` - there is no model file;
 - `OSError` - the model file cannot be read: no access, the path points to a directory;
-- `ValueError` - the file is not a ruSyntax model, the model has another format version or the file is damaged (the checksum does not match).
+- `ValueError` - the file is not a ruSyntax model, the model has another format version or the file is damaged (the checksum does not match);
+- `TypeError` - the path is neither a string nor `os.PathLike`.
 
 === "Code"
 
@@ -42,7 +43,7 @@ Read-only properties:
 
 | Property | Type | Description |
 | :------- | :--- | :---------- |
-| `path` | `Path` / `None` | The model file; `None` for the package model |
+| `path` | `Path` / `None` | The absolute path to the model file; `None` for the package model |
 | `relations` | `list[str]` | The relations of the model with subtypes: `nsubj`, `obl:tmod`, `root` and others |
 | `sources` | `dict` / `None` | How the model was trained: the UD release, the treebanks and their commits, the ruMorph version, LAS on dev |
 
@@ -84,12 +85,12 @@ Exceptions: `TypeError` - the text is not a string.
 annotate(document)
 ```
 
-Fills the `head` and `deprel` columns of an anySeg document; the previous values are replaced. The parts of speech and features come from the `upos` and `feats` columns, so the document gets its morphology first - usually with `rumorph.Analyzer().annotate(document)`. The document is an `anyseg.Document` or an object with the same interface: `column(name)`, `sentences` (a sentence has `words`, a word has `index`) and `set_columns`. Parsing runs without the GIL.
+Fills the `head` and `deprel` columns of an anySeg document; the previous values are replaced. The parts of speech and features come from the `upos` and `feats` columns, so the document gets its morphology first - usually with `rumorph.Analyzer().annotate(document)`. The document is an `anyseg.Document` or an object with the same interface: `column(name)`, `sentences` (a sentence has `words`, a word has `index`) and `set_columns`. The enhanced graph (the `deps` column) and the empty nodes of a CoNLL-U document are not changed. Parsing runs without the GIL.
 
 Exceptions:
 
-- `ValueError` - a word has no part of speech, or the sentences of the document do not follow each other over all its words;
-- `TypeError` - the columns of the document are not strings, or a word number is not an integer.
+- `ValueError` - a word has no part of speech, a part of speech is not one of the 17 UD parts of speech, or the sentences of the document do not follow each other over all its words;
+- `TypeError` - this is not a document (`parse_text` parses a text), the columns of the document are not strings, or a word number is not an integer.
 
 === "Code"
 
@@ -115,17 +116,17 @@ Exceptions:
 parse(words, upos, feats)
 ```
 
-The head and relation of every word of the sentence in the same order; an empty sentence gives an empty list. The words come with their part of speech and features in the UD annotation - as ruMorph gives them. The features are a CoNLL-U field (`Case=Nom|Number=Sing`); `_`, an empty string or `None` mean no features. A part of speech or feature unknown to the model is parsed as unknown. Parsing runs without the GIL.
+The head and relation of every word of the sentence in the same order; an empty sentence gives an empty list. The words come with their part of speech and features in the UD annotation - as ruMorph gives them. The part of speech is one of the 17 UD parts of speech in capitals (`NOUN`, `VERB`, `X`): with other tags, lowercase or OpenCorpora ones for example, the model would parse almost at random, so they are an error. The features are a CoNLL-U field (`Case=Nom|Number=Sing`) or a dictionary, like `feats` of a ruMorph analysis; `_`, an empty string, an empty dictionary or `None` mean no features. Features unknown to the model are skipped. Parsing runs without the GIL.
 
 | Parameter | Type | Description |
 | :-------- | :--- | :---------- |
-| `words` | `Sequence[str]` | The word forms |
-| `upos` | `Sequence[str]` | The UD parts of speech |
-| `feats` | `Sequence[str \| None]` | The UD features of every word |
+| `words` | `Iterable[str]` | The word forms |
+| `upos` | `Iterable[str]` | The UD parts of speech |
+| `feats` | `Iterable[str \| Mapping[str, str] \| None]` | The UD features of every word |
 
 Exceptions:
 
-- `ValueError` - the lengths of `words`, `upos` and `feats` differ;
+- `ValueError` - the lengths of `words`, `upos` and `feats` differ, or a part of speech is not one of the 17 UD parts of speech;
 - `TypeError` - the input is not a collection of strings (a string instead of a list is an error too).
 
 === "Code"
@@ -144,6 +145,24 @@ Exceptions:
     [(2, 'nsubj'), (0, 'root'), (2, 'obj')]
     ```
 
+If the text is already split into words, ruMorph gives them the morphology in context: the first analysis of every word is the one its context model picked.
+
+=== "Code"
+
+    ``` python
+    from rumorph import Analyzer
+
+    words = ["Кошка", "спала", "на", "крыльце", "."]
+    best = [analyses[0] for analyses in Analyzer().analyze_sentence(words)]
+    parser.parse(words, [a.pos for a in best], [a.feats for a in best])
+    ```
+
+=== "Result"
+
+    ```
+    [(2, 'nsubj'), (0, 'root'), (4, 'case'), (2, 'obl'), (2, 'punct')]
+    ```
+
 ### Parsing many sentences { #parse_many }
 
 ``` {.python .signature}
@@ -152,7 +171,7 @@ parse_many(sentences)
 
 The same as `parse` for every sentence, but faster: sentences of close lengths are parsed four at a time. A sentence is a triple (forms, parts of speech, features). Parsing runs without the GIL in chunks of 256 sentences; Ctrl+C works between them.
 
-Exceptions: `ValueError` - a sentence is not three collections or their lengths differ; `TypeError` - the input is not a collection of strings.
+Exceptions: `ValueError` - a sentence is not three collections, their lengths differ, or a part of speech is not one of the 17 UD parts of speech; `TypeError` - the input is not a collection of strings.
 
 === "Code"
 
@@ -173,8 +192,8 @@ Exceptions: `ValueError` - a sentence is not three collections or their lengths 
 
 ## The parse tree { #tree }
 
-Every word has one head, a sentence has one root, and there are no cycles; non-projective trees (crossing relations) are allowed. The parser picks the tree with the highest sum of head scores (the Chu - Liu - Edmonds algorithm). For degenerate sentences, where the best heads give more than 16 cycles or 8 root candidates, and for sentences longer than 1024 words the tree is built faster: the extra roots and the nodes of cycles are attached to the best root. The relations come with subtypes, as in the UD annotation (`nsubj:pass`, `obl:tmod`); the CoNLL 2018 evaluation compares the relation without the subtype.
+Every word has one head, a sentence has one root, and there are no cycles; non-projective trees (crossing relations) are allowed. The parser picks the tree with the highest sum of head scores (the Chu - Liu - Edmonds algorithm). For degenerate sentences, where the best heads give more than 16 cycles or 8 root candidates, the tree is built faster: the extra roots and the nodes of cycles are attached to the best root. The tree of a sentence longer than 1024 words is built the same way - text without punctuation, for example, which the segmenter does not split into sentences; the head of a word in it is looked for among 64 words on each side and the root, so the parsing time grows linearly with the length. The relations come with subtypes, as in the UD annotation (`nsubj:pass`, `obl:tmod`); only the root has the `root` relation; the CoNLL 2018 evaluation compares the relation without the subtype.
 
 ## Threads and processes { #threads }
 
-The parser does not change while parsing: one parser can be shared between threads, and parsing runs without the GIL, so the threads parse in parallel. On Python 3.14t and 3.15t without the GIL the module does not enable the GIL. The parser moves to another process with pickle: the path to the model, or the mark of the package model, is saved. `copy.copy` and `copy.deepcopy` return the same object.
+The parser does not change while parsing: one parser can be shared between threads, and parsing runs without the GIL, so the threads parse in parallel. On Python 3.14t and 3.15t without the GIL the module does not enable the GIL. The parser moves to another process with pickle: the absolute path to the model, or the mark of the package model, is saved. `copy.copy` and `copy.deepcopy` return the same object. Parsers are equal if their model comes from the same file or both use the package model; a parser can be held by a weak reference (`weakref`).
