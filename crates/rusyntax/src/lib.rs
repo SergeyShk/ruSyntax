@@ -3,8 +3,9 @@
 //!
 //! На входе - слова предложения с частью речи и признаками UD (например, от морфологического анализатора
 //! ruMorph), на выходе - номер вершины (0 - корень) и связь каждого слова. Модель - BiLSTM над словами
-//! и их тегами, вершины - биаффинная оценка и дерево максимального веса с одним корнем, связи - по паре
-//! «зависимое - вершина». Модель читается из файла формата ruSyntax ([`Parser::from_bytes`]).
+//! и их тегами, вершины - биаффинная оценка и дерево максимального веса с одним корнем (у вырожденных
+//! и очень длинных предложений - быстрая починка лучших вершин), связи - по паре «зависимое - вершина».
+//! Модель читается из файла формата ruSyntax ([`Parser::from_bytes`]).
 //!
 //! ```no_run
 //! use rusyntax::{Parser, Word};
@@ -66,9 +67,17 @@ pub struct Relation<'p> {
 
 /// Синтаксический анализатор: модель в памяти. Разбор не меняет анализатор, поэтому один анализатор
 /// можно разделять между потоками
-#[derive(Debug)]
 pub struct Parser {
     model: Model,
+}
+
+impl std::fmt::Debug for Parser {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Parser")
+            .field("relations", &self.model.relations.len())
+            .field("sources", &self.model.sources)
+            .finish_non_exhaustive()
+    }
 }
 
 impl Parser {
@@ -314,6 +323,15 @@ mod tests {
         let parser = Parser::from_bytes(&model(2, 5, true)).unwrap();
         let words = &sentences()[0];
         assert_eq!(parser.parse(words), parser.parse(words));
+    }
+
+    #[test]
+    fn debug_is_short() {
+        let parser = Parser::from_bytes(&model(1, 5, false)).unwrap();
+        assert_eq!(
+            format!("{parser:?}"),
+            r#"Parser { relations: 5, sources: Some("{\"train\": [\"test\"]}"), .. }"#
+        );
     }
 
     #[test]

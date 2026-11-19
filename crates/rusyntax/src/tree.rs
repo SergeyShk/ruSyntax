@@ -1,12 +1,25 @@
 //! Дерево зависимостей по оценкам вершин: у каждого слова одна вершина, корень один, циклов нет.
 //!
 //! Сначала у каждого слова берется лучшая вершина; если это уже дерево с одним корнем, оно и есть дерево
-//! максимального веса. Иначе - Чу - Лю - Эдмондс по логарифмам вероятностей вершин с перебором корня;
-//! у предложений длиннее `FULL` слов (оценки всех пар заняли бы слишком много памяти) лишние корни и узлы
-//! циклов подвешиваются к лучшему корню.
+//! максимального веса. Иначе - Чу - Лю - Эдмондс по логарифмам вероятностей вершин с перебором корня.
+//! Работа ограничена (`CONTRACTIONS` стягиваний циклов, `CANDIDATES` кандидатов в корень): сверх этого,
+//! как и у предложений длиннее `FULL` слов, лишние корни и узлы циклов подвешиваются к лучшему корню.
 
 /// Длина предложения, до которой строится полная матрица оценок и ищется дерево максимального веса
 pub(crate) const FULL: usize = 1024;
+/// Сколько циклов стягивает Чу - Лю - Эдмондс (на dev UD больше 6 не бывает)
+const CONTRACTIONS: usize = 16;
+/// Сколько кандидатов в корень перебирается (на dev UD больше 2 не бывает)
+const CANDIDATES: usize = 8;
+
+/// Оценка без NaN и бесконечностей: иначе сравнения ломают выбор лучшей вершины
+fn finite(value: f32) -> f32 {
+    if value.is_nan() {
+        f32::MIN
+    } else {
+        value.clamp(f32::MIN, f32::MAX)
+    }
+}
 
 /// Вершины позиций `0..n` (0 - корень, его вершина - 0) по оценке `score(зависимое, вершина)`
 pub(crate) fn heads(n: usize, score: &impl Fn(usize, usize) -> f32) -> Vec<usize> {
@@ -17,7 +30,7 @@ pub(crate) fn heads(n: usize, score: &impl Fn(usize, usize) -> f32) -> Vec<usize
     for d in 1..n {
         for h in 0..n {
             if h != d {
-                s[d * n + h] = score(d, h);
+                s[d * n + h] = finite(score(d, h));
             }
         }
     }
@@ -47,7 +60,10 @@ pub(crate) fn heads(n: usize, score: &impl Fn(usize, usize) -> f32) -> Vec<usize
             }
         }
     }
-    one_root(&logp)
+    one_root(&logp).unwrap_or_else(|| {
+        let root_score: Vec<f32> = (0..n).map(|d| s[d * n]).collect();
+        repair(heads, &root_score)
+    })
 }
 
 fn argmax(row: &[f32]) -> usize {
@@ -83,13 +99,16 @@ fn cycle(heads: &[usize]) -> Option<Vec<usize>> {
 }
 
 /// Чу - Лю - Эдмондс с одним корнем: если в лучшем дереве у корня несколько детей, перебираются деревья
-/// с каждым из них единственным ребенком корня
-fn one_root(scores: &[Vec<f64>]) -> Vec<usize> {
+/// с каждым из них единственным ребенком корня. `None` - работа вышла за пределы
+fn one_root(scores: &[Vec<f64>]) -> Option<Vec<usize>> {
     let n = scores.len();
-    let tree = edmonds(scores);
+    let tree = edmonds(scores.to_vec())?;
     let candidates: Vec<usize> = (1..n).filter(|&d| tree[d] == 0).collect();
     if candidates.len() == 1 {
-        return tree;
+        return Some(tree);
+    }
+    if candidates.len() > CANDIDATES {
+        return None;
     }
     let mut best = (f64::NEG_INFINITY, tree);
     for &root in &candidates {
@@ -99,87 +118,106 @@ fn one_root(scores: &[Vec<f64>]) -> Vec<usize> {
                 row[0] = f64::NEG_INFINITY;
             }
         }
-        let candidate = edmonds(&s);
-        let total: f64 = (1..n).map(|d| s[d][candidate[d]]).sum();
-        if total > best.0 {
-            best = (total, candidate);
+        let total = |tree: &[usize]| -> f64 { (1..n).map(|d| s[d][tree[d]]).sum() };
+        let candidate = edmonds(s.clone())?;
+        let value = total(&candidate);
+        if value > best.0 {
+            best = (value, candidate);
         }
     }
-    best.1
+    Some(best.1)
 }
 
-/// Дерево максимального веса с корнем 0: `s[d][h]` - оценка вершины `h` у `d`, строка 0 и диагональ - -inf
-fn edmonds(s: &[Vec<f64>]) -> Vec<usize> {
-    let n = s.len();
-    let mut heads: Vec<usize> = (0..n)
-        .map(|d| {
-            if d == 0 {
-                return 0;
-            }
-            (0..n).fold(0, |best, h| if s[d][h] > s[d][best] { h } else { best })
-        })
-        .collect();
-    heads[0] = 0;
-    let Some(cyc) = cycle(&heads) else {
-        return heads;
-    };
-    // Цикл стягивается в узел m; остальные узлы - rest (в нем 0 - первый)
-    let mut in_cycle = vec![false; n];
-    cyc.iter().for_each(|&v| in_cycle[v] = true);
-    let rest: Vec<usize> = (0..n).filter(|&v| !in_cycle[v]).collect();
-    let m = rest.len();
-    let mut t = vec![vec![f64::NEG_INFINITY; m + 1]; m + 1];
-    let mut out_from = vec![0usize; m];
-    let mut in_to = vec![0usize; m];
-    for (i, &v) in rest.iter().enumerate() {
-        for (j, &h) in rest.iter().enumerate() {
-            t[i][j] = s[v][h];
-        }
-        // Лучшая вершина узла v внутри цикла
-        let (h, value) = cyc
-            .iter()
-            .map(|&c| (c, s[v][c]))
-            .fold((cyc[0], f64::NEG_INFINITY), max_pair);
-        t[i][m] = value;
-        out_from[i] = h;
-        // Лучший вход в цикл из h = v: замена связи цикла
-        let (c, value) = cyc
-            .iter()
-            .map(|&c| (c, s[c][v] - s[c][heads[c]]))
-            .fold((cyc[0], f64::NEG_INFINITY), max_pair);
-        t[m][i] = value;
-        in_to[i] = c;
-    }
-    t[0] = vec![f64::NEG_INFINITY; m + 1];
-    let inner = edmonds(&t);
-    let mut result = heads.clone();
-    for i in 1..m {
-        result[rest[i]] = if inner[i] == m {
-            out_from[i]
-        } else {
-            rest[inner[i]]
+/// Стягивание цикла: что нужно, чтобы развернуть вершины графа уровнем ниже
+struct Level {
+    heads: Vec<usize>,
+    rest: Vec<usize>,
+    out_from: Vec<usize>,
+    in_to: Vec<usize>,
+}
+
+/// Дерево максимального веса с корнем 0: `s[d][h]` - оценка вершины `h` у `d`, строка 0 и диагональ - -inf.
+/// Без рекурсии: в памяти одна матрица текущего уровня; больше `CONTRACTIONS` стягиваний - `None`
+fn edmonds(mut s: Vec<Vec<f64>>) -> Option<Vec<usize>> {
+    let mut levels: Vec<Level> = Vec::new();
+    let mut result = loop {
+        let n = s.len();
+        let mut heads: Vec<usize> = (0..n)
+            .map(|d| (0..n).fold(0, |best, h| if s[d][h] > s[d][best] { h } else { best }))
+            .collect();
+        heads[0] = 0;
+        let Some(cyc) = cycle(&heads) else {
+            break heads;
         };
+        if levels.len() == CONTRACTIONS {
+            return None;
+        }
+        // Цикл стягивается в узел m; остальные узлы - rest (в нем 0 - первый)
+        let mut in_cycle = vec![false; n];
+        cyc.iter().for_each(|&v| in_cycle[v] = true);
+        let rest: Vec<usize> = (0..n).filter(|&v| !in_cycle[v]).collect();
+        let m = rest.len();
+        let mut t = vec![vec![f64::NEG_INFINITY; m + 1]; m + 1];
+        let mut out_from = vec![0usize; m];
+        let mut in_to = vec![0usize; m];
+        for (i, &v) in rest.iter().enumerate() {
+            for (j, &h) in rest.iter().enumerate() {
+                t[i][j] = s[v][h];
+            }
+            // Лучшая вершина узла v внутри цикла
+            let (h, value) = (cyc.iter())
+                .map(|&c| (c, s[v][c]))
+                .fold((cyc[0], f64::NEG_INFINITY), max_pair);
+            t[i][m] = value;
+            out_from[i] = h;
+            // Лучший вход в цикл из v: замена связи цикла
+            let (c, value) = (cyc.iter())
+                .map(|&c| (c, s[c][v] - s[c][heads[c]]))
+                .fold((cyc[0], f64::NEG_INFINITY), max_pair);
+            t[m][i] = value;
+            in_to[i] = c;
+        }
+        t[0] = vec![f64::NEG_INFINITY; m + 1];
+        levels.push(Level {
+            heads,
+            rest,
+            out_from,
+            in_to,
+        });
+        s = t;
+    };
+    while let Some(level) = levels.pop() {
+        let m = level.rest.len();
+        let mut outer = level.heads;
+        for i in 1..m {
+            outer[level.rest[i]] = if result[i] == m {
+                level.out_from[i]
+            } else {
+                level.rest[result[i]]
+            };
+        }
+        let h = result[m];
+        outer[level.in_to[h]] = level.rest[h];
+        result = outer;
     }
-    let h = inner[m];
-    result[in_to[h]] = rest[h];
-    result
+    Some(result)
 }
 
 fn max_pair(best: (usize, f64), next: (usize, f64)) -> (usize, f64) {
     if next.1 > best.1 { next } else { best }
 }
 
-/// Длинное предложение: лучшие вершины без полной матрицы; лишние корни и узлы циклов - к лучшему корню
+/// Длинное предложение: лучшие вершины без полной матрицы, затем `repair`
 fn long(n: usize, score: &impl Fn(usize, usize) -> f32) -> Vec<usize> {
     let mut heads = vec![0usize; n];
-    let mut root_score = vec![f32::NEG_INFINITY; n];
+    let mut root_score = vec![f32::MIN; n];
     for d in 1..n {
         let mut best = (0, f32::NEG_INFINITY);
         for h in 0..n {
             if h == d {
                 continue;
             }
-            let value = score(d, h);
+            let value = finite(score(d, h));
             if h == 0 {
                 root_score[d] = value;
             }
@@ -189,24 +227,26 @@ fn long(n: usize, score: &impl Fn(usize, usize) -> f32) -> Vec<usize> {
         }
         heads[d] = best.0;
     }
+    repair(heads, &root_score)
+}
+
+/// Дерево из лучших вершин: из кандидатов в корень (или из всех слов, если их нет) остается один
+/// с лучшей оценкой корня, остальные кандидаты и узлы циклов подвешиваются к нему
+fn repair(mut heads: Vec<usize>, root_score: &[f32]) -> Vec<usize> {
+    let n = heads.len();
     let candidates: Vec<usize> = (1..n).filter(|&d| heads[d] == 0).collect();
-    let root = if candidates.is_empty() {
-        (1..n).fold(1, |best, d| {
-            if root_score[d] > root_score[best] {
-                d
-            } else {
-                best
-            }
-        })
+    let pool: Vec<usize> = if candidates.is_empty() {
+        (1..n).collect()
     } else {
-        candidates.iter().copied().fold(candidates[0], |best, d| {
-            if root_score[d] > root_score[best] {
-                d
-            } else {
-                best
-            }
-        })
+        candidates
     };
+    let root = pool.iter().copied().fold(pool[0], |best, d| {
+        if root_score[d] > root_score[best] {
+            d
+        } else {
+            best
+        }
+    });
     for (d, head) in heads.iter_mut().enumerate().skip(1) {
         if *head == 0 && d != root {
             *head = root;
@@ -270,7 +310,7 @@ mod tests {
                     }
                 }
             }
-            let tree = one_root(&s);
+            let tree = one_root(&s).expect("малый граф укладывается в пределы");
             assert!(is_tree(&tree), "{tree:?}");
             let total: f64 = (1..n).map(|d| s[d][tree[d]]).sum();
             assert!((total - brute(n, &s)).abs() < 1e-9, "попытка {trial}");
@@ -286,6 +326,42 @@ mod tests {
             assert!(is_tree(&heads(n, &score)));
             assert!(is_tree(&long(n, &score)));
         }
+    }
+
+    #[test]
+    fn nan_and_infinite_scores_give_tree() {
+        for bad in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
+            assert!(is_tree(&heads(5, &|_, _| bad)));
+            assert!(is_tree(&heads(5, &|d, h| if h == 0 {
+                bad
+            } else {
+                d as f32
+            })));
+            assert!(is_tree(&long(5, &|_, _| bad)));
+        }
+    }
+
+    #[test]
+    fn degenerate_sentence_is_bounded_and_stack_safe() {
+        // Пары соседей хотят друг друга: сотни 2-циклов, у потоков musl стек 128 КиБ
+        let n = FULL + 1;
+        let score = move |d: usize, h: usize| {
+            if h != 0 && d.div_ceil(2) == h.div_ceil(2) {
+                10.0
+            } else {
+                -(d as f32) / n as f32
+            }
+        };
+        let tree = std::thread::Builder::new()
+            .stack_size(128 * 1024)
+            .spawn(move || heads(n, &score))
+            .and_then(|thread| {
+                thread
+                    .join()
+                    .map_err(|_| std::io::Error::other("поток упал"))
+            })
+            .expect("разбор в малом стеке");
+        assert!(is_tree(&tree));
     }
 
     #[test]
