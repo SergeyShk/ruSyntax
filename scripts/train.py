@@ -23,7 +23,7 @@
     На MPS и GPU обучение недетерминировано: повторный запуск дает близкие, но не те же веса.
 
 Пример использования:
-    uv run scripts/train.py target/ud --output data/ru-syntax.bin --check data/check.conllu
+    uv run --python 3.13 scripts/train.py target/ud --output data/ru-syntax.bin --check data/check.conllu
 """
 
 import argparse
