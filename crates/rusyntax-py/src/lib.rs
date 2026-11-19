@@ -4,9 +4,9 @@ use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, OnceLock};
 
-use pyo3::exceptions::{PyOSError, PyTypeError, PyValueError};
+use pyo3::exceptions::{PyOSError, PyOverflowError, PyTypeError, PyValueError};
 use pyo3::prelude::*;
-use pyo3::types::{PyDict, PyInt, PyString, PyTuple};
+use pyo3::types::{PyDict, PyString, PyTuple};
 use pyo3::{IntoPyObjectExt, intern};
 
 /// Модель пакета: веса `data/ru-syntax.bin` (CC BY-SA 4.0, LICENSE-MODEL.txt) вшиты в модуль
@@ -410,13 +410,16 @@ impl Parser {
             for word in words {
                 if count == 0 {
                     let index = word?.getattr(intern!(py, "index"))?;
-                    if !index.is_instance_of::<PyInt>() {
-                        return Err(type_error("Номер слова должен быть целым числом", &index));
-                    }
                     // Целое вне диапазона - номер за пределами документа, а не ошибка типа
-                    start = (index.extract::<isize>().ok())
-                        .and_then(|index| usize::try_from(index).ok())
-                        .ok_or_else(unordered)?;
+                    start = match index.extract::<isize>() {
+                        Ok(index) => usize::try_from(index).map_err(|_| unordered())?,
+                        Err(err) if err.is_instance_of::<PyOverflowError>(py) => {
+                            return Err(unordered());
+                        }
+                        Err(_) => {
+                            return Err(type_error("Номер слова должен быть целым числом", &index));
+                        }
+                    };
                 }
                 count += 1;
             }

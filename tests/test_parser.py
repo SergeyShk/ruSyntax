@@ -1,5 +1,6 @@
 import copy
 import pickle
+import re
 import shutil
 import threading
 from pathlib import Path
@@ -188,11 +189,25 @@ def test_annotate_generator_columns(parser):
     assert len(document.columns["head"]) == 4
 
 
-def test_annotate_huge_index(parser):
+class Index:
+    """Целое по протоколу __index__, как numpy.int64"""
+
+    def __init__(self, value):
+        self.value = value
+
+    def __index__(self):
+        return self.value
+
+
+def test_annotate_index_kinds(parser):
     document = FakeDocument([Sentence([0, 1, 2, 3])])
-    document.sentences[0].words[0].index = 2**64
-    with pytest.raises(ValueError, match="не идут подряд"):
-        parser.annotate(document)
+    document.sentences[0].words[0].index = Index(0)
+    parser.annotate(document)
+    assert len(document.columns["head"]) == 4
+    for huge in (2**64, -(2**64), -1):
+        document.sentences[0].words[0].index = huge
+        with pytest.raises(ValueError, match="не идут подряд"):
+            parser.annotate(document)
 
 
 def test_parse_text(parser):
@@ -227,7 +242,7 @@ def test_model_errors(tmp_path):
     data = bytearray(MODEL.read_bytes())
     data[-1] ^= 1
     damaged.write_bytes(bytes(data))
-    with pytest.raises(ValueError, match=f"{damaged}: .*контрольная сумма не совпадает"):
+    with pytest.raises(ValueError, match=f"{re.escape(str(damaged))}: .*контрольная сумма"):
         Parser(damaged)
     other = tmp_path / "other.bin"
     other.write_bytes(b"not a model")
