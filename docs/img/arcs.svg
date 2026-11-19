@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1004 332" width="1004" height="332" font-family="PT Sans, Source Sans Pro, Arial, sans-serif" role="img">
+<rect width="1004" height="332" rx="12" fill="white"/>
+<g transform="translate(0,272)">
+<path fill="none" stroke="#64b5f6" stroke-width="2.5" d="M320.3 -8C326.3 -84.0 200.0 -84.0 200.0 -17"/>
+<path d="M193.0 -19.2L207.0 -19.2L200.0 -8.0Z" fill="#64b5f6"/>
+<path fill="none" stroke="#64b5f6" stroke-width="2.5" d="M523.5 -8C529.5 -84.0 427.9 -84.0 427.9 -17"/>
+<path d="M420.9 -19.2L434.9 -19.2L427.9 -8.0Z" fill="#64b5f6"/>
+<path fill="none" stroke="#64b5f6" stroke-width="2.5" d="M842.3 -8C848.3 -84.0 728.2 -84.0 728.2 -17"/>
+<path d="M721.2 -19.2L735.2 -19.2L728.2 -8.0Z" fill="#64b5f6"/>
+<path fill="none" stroke="#64b5f6" stroke-width="2.5" d="M523.5 -8C529.5 -130.0 326.3 -130.0 326.3 -17"/>
+<path d="M319.3 -19.2L333.3 -19.2L326.3 -8.0Z" fill="#64b5f6"/>
+<path fill="none" stroke="#64b5f6" stroke-width="2.5" d="M842.3 -8C848.3 -130.0 625.8 -130.0 625.8 -17"/>
+<path d="M618.8 -19.2L632.8 -19.2L625.8 -8.0Z" fill="#64b5f6"/>
+<path fill="none" stroke="#64b5f6" stroke-width="2.5" d="M535.5 -8C529.5 -176.0 848.3 -176.0 848.3 -17"/>
+<path d="M841.3 -19.2L855.3 -19.2L848.3 -8.0Z" fill="#64b5f6"/>
+<path fill="none" stroke="#64b5f6" stroke-width="2.5" d="M523.5 -8C529.5 -222.0 73.8 -222.0 73.8 -17"/>
+<path d="M66.8 -19.2L80.8 -19.2L73.8 -8.0Z" fill="#64b5f6"/>
+<path fill="none" stroke="#64b5f6" stroke-width="2.5" d="M535.5 -8C529.5 -222.0 946.0 -222.0 946.0 -17"/>
+<path d="M939.0 -19.2L953.0 -19.2L946.0 -8.0Z" fill="#64b5f6"/>
+<rect x="216.1" y="-85.0" width="94.1" height="30" rx="5" fill="white"/>
+<text x="263.2" y="-71.0" font-size="13" fill="#1976d2" font-weight="bold" text-anchor="middle">определение</text>
+<text x="263.2" y="-59.0" font-size="10" fill="#78909c" text-anchor="middle">amod</text>
+<rect x="420.7" y="-85.0" width="115.9" height="30" rx="5" fill="white"/>
+<text x="478.7" y="-71.0" font-size="13" fill="#1976d2" font-weight="bold" text-anchor="middle">обстоятельство</text>
+<text x="478.7" y="-59.0" font-size="10" fill="#78909c" text-anchor="middle">advmod</text>
+<rect x="741.2" y="-85.0" width="94.1" height="30" rx="5" fill="white"/>
+<text x="788.2" y="-71.0" font-size="13" fill="#1976d2" font-weight="bold" text-anchor="middle">определение</text>
+<text x="788.2" y="-59.0" font-size="10" fill="#78909c" text-anchor="middle">amod</text>
+<rect x="384.5" y="-119.5" width="86.8" height="30" rx="5" fill="white"/>
+<text x="427.9" y="-105.5" font-size="13" fill="#1976d2" font-weight="bold" text-anchor="middle">подлежащее</text>
+<text x="427.9" y="-93.5" font-size="10" fill="#78909c" text-anchor="middle">nsubj</text>
+<rect x="704.5" y="-119.5" width="65.0" height="30" rx="5" fill="white"/>
+<text x="737.0" y="-105.5" font-size="13" fill="#1976d2" font-weight="bold" text-anchor="middle">предлог</text>
+<text x="737.0" y="-93.5" font-size="10" fill="#78909c" text-anchor="middle">case</text>
+<rect x="630.9" y="-154.0" width="115.9" height="30" rx="5" fill="white"/>
+<text x="688.9" y="-140.0" font-size="13" fill="#1976d2" font-weight="bold" text-anchor="middle">обстоятельство</text>
+<text x="688.9" y="-128.0" font-size="10" fill="#78909c" text-anchor="middle">obl</text>
+<rect x="243.7" y="-188.5" width="115.9" height="30" rx="5" fill="white"/>
+<text x="301.6" y="-174.5" font-size="13" fill="#1976d2" font-weight="bold" text-anchor="middle">обстоятельство</text>
+<text x="301.6" y="-162.5" font-size="10" fill="#78909c" text-anchor="middle">advmod</text>
+<rect x="716.2" y="-188.5" width="43.1" height="30" rx="5" fill="white"/>
+<text x="737.7" y="-174.5" font-size="13" fill="#1976d2" font-weight="bold" text-anchor="middle">знак</text>
+<text x="737.7" y="-162.5" font-size="10" fill="#78909c" text-anchor="middle">punct</text>
+<path fill="none" stroke="#1976d2" stroke-width="2.5" d="M529.5 -252.0L529.5 -18"/>
+<path d="M522.5 -19.2L536.5 -19.2L529.5 -8.0Z" fill="#1976d2"/>
+<text x="539.5" y="-242.0" font-size="13" fill="#1976d2" font-weight="bold" text-anchor="start">сказуемое</text>
+<text x="73.8" y="20.0" font-size="22" fill="#263238" font-weight="bold" text-anchor="middle">Вчера</text>
+<text x="73.8" y="40.0" font-size="13" fill="#78909c" text-anchor="middle">нареч.</text>
+<text x="200.0" y="20.0" font-size="22" fill="#263238" font-weight="bold" text-anchor="middle">маленькая</text>
+<text x="200.0" y="40.0" font-size="13" fill="#78909c" text-anchor="middle">прил.</text>
+<text x="326.3" y="20.0" font-size="22" fill="#263238" font-weight="bold" text-anchor="middle">кошка</text>
+<text x="326.3" y="40.0" font-size="13" fill="#78909c" text-anchor="middle">сущ.</text>
+<text x="427.9" y="20.0" font-size="22" fill="#263238" font-weight="bold" text-anchor="middle">долго</text>
+<text x="427.9" y="40.0" font-size="13" fill="#78909c" text-anchor="middle">нареч.</text>
+<text x="529.5" y="20.0" font-size="22" fill="#263238" font-weight="bold" text-anchor="middle">спала</text>
+<text x="529.5" y="40.0" font-size="13" fill="#78909c" text-anchor="middle">глаг.</text>
+<text x="625.8" y="20.0" font-size="22" fill="#263238" font-weight="bold" text-anchor="middle">на</text>
+<text x="625.8" y="40.0" font-size="13" fill="#78909c" text-anchor="middle">предлог</text>
+<text x="728.2" y="20.0" font-size="22" fill="#263238" font-weight="bold" text-anchor="middle">теплом</text>
+<text x="728.2" y="40.0" font-size="13" fill="#78909c" text-anchor="middle">прил.</text>
+<text x="848.3" y="20.0" font-size="22" fill="#263238" font-weight="bold" text-anchor="middle">крыльце</text>
+<text x="848.3" y="40.0" font-size="13" fill="#78909c" text-anchor="middle">сущ.</text>
+<text x="946.0" y="20.0" font-size="22" fill="#263238" font-weight="bold" text-anchor="middle">.</text>
+<text x="946.0" y="40.0" font-size="13" fill="#78909c" text-anchor="middle">знак</text>
+</g>
+</svg>

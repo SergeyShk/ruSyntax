@@ -1,6 +1,6 @@
 # Установка
 
-Требуется Python 3.11 или новее.
+Требуется Python 3.11 или новее. Вместе с пакетом устанавливаются сегментатор [anySeg](https://github.com/SergeyShk/anySeg) и морфологический анализатор [ruMorph](https://github.com/SergeyShk/ruMorph): они нужны для разбора текста.
 
 ``` bash
 pip install rusyntax
@@ -13,7 +13,7 @@ pip install rusyntax
 Предварительные версии `0.1.0.devN` публикуются только на TestPyPI:
 
 ``` bash
-pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ rusyntax==0.1.0.dev1
+pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ "rusyntax>=0.1.0.dev0"
 ```
 
 ## Сборка из исходников

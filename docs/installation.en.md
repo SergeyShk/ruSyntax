@@ -1,6 +1,6 @@
 # Installation
 
-Python 3.11 or newer is required.
+Python 3.11 or newer is required. The [anySeg](https://github.com/SergeyShk/anySeg) segmenter and the [ruMorph](https://github.com/SergeyShk/ruMorph) morphological analyzer are installed together with the package: parsing a text needs them.
 
 ``` bash
 pip install rusyntax
@@ -13,7 +13,7 @@ PyPI hosts wheels for Linux (x86_64 and aarch64, manylinux and musllinux), macOS
 Pre-release versions `0.1.0.devN` are published only on TestPyPI:
 
 ``` bash
-pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ rusyntax==0.1.0.dev1
+pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ "rusyntax>=0.1.0.dev0"
 ```
 
 ## Building from source

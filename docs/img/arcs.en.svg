@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1004 332" width="1004" height="332" font-family="PT Sans, Source Sans Pro, Arial, sans-serif" role="img">
+<rect width="1004" height="332" rx="12" fill="white"/>
+<g transform="translate(0,272)">
+<path fill="none" stroke="#64b5f6" stroke-width="2.5" d="M320.3 -8C326.3 -84.0 200.0 -84.0 200.0 -17"/>
+<path d="M193.0 -19.2L207.0 -19.2L200.0 -8.0Z" fill="#64b5f6"/>
+<path fill="none" stroke="#64b5f6" stroke-width="2.5" d="M523.5 -8C529.5 -84.0 427.9 -84.0 427.9 -17"/>
+<path d="M420.9 -19.2L434.9 -19.2L427.9 -8.0Z" fill="#64b5f6"/>
+<path fill="none" stroke="#64b5f6" stroke-width="2.5" d="M827.7 -8C833.7 -84.0 713.6 -84.0 713.6 -17"/>
+<path d="M706.6 -19.2L720.6 -19.2L713.6 -8.0Z" fill="#64b5f6"/>
+<path fill="none" stroke="#64b5f6" stroke-width="2.5" d="M523.5 -8C529.5 -130.0 326.3 -130.0 326.3 -17"/>
+<path d="M319.3 -19.2L333.3 -19.2L326.3 -8.0Z" fill="#64b5f6"/>
+<path fill="none" stroke="#64b5f6" stroke-width="2.5" d="M827.7 -8C833.7 -130.0 618.5 -130.0 618.5 -17"/>
+<path d="M611.5 -19.2L625.5 -19.2L618.5 -8.0Z" fill="#64b5f6"/>
+<path fill="none" stroke="#64b5f6" stroke-width="2.5" d="M535.5 -8C529.5 -176.0 833.7 -176.0 833.7 -17"/>
+<path d="M826.7 -19.2L840.7 -19.2L833.7 -8.0Z" fill="#64b5f6"/>
+<path fill="none" stroke="#64b5f6" stroke-width="2.5" d="M523.5 -8C529.5 -222.0 73.8 -222.0 73.8 -17"/>
+<path d="M66.8 -19.2L80.8 -19.2L73.8 -8.0Z" fill="#64b5f6"/>
+<path fill="none" stroke="#64b5f6" stroke-width="2.5" d="M535.5 -8C529.5 -222.0 938.7 -222.0 938.7 -17"/>
+<path d="M931.7 -19.2L945.7 -19.2L938.7 -8.0Z" fill="#64b5f6"/>
+<rect x="227.0" y="-85.0" width="72.2" height="30" rx="5" fill="white"/>
+<text x="263.2" y="-71.0" font-size="13" fill="#1976d2" font-weight="bold" text-anchor="middle">modifier</text>
+<text x="263.2" y="-59.0" font-size="10" fill="#78909c" text-anchor="middle">amod</text>
+<rect x="438.9" y="-85.0" width="79.5" height="30" rx="5" fill="white"/>
+<text x="478.7" y="-71.0" font-size="13" fill="#1976d2" font-weight="bold" text-anchor="middle">adverbial</text>
+<text x="478.7" y="-59.0" font-size="10" fill="#78909c" text-anchor="middle">advmod</text>
+<rect x="737.6" y="-85.0" width="72.2" height="30" rx="5" fill="white"/>
+<text x="773.7" y="-71.0" font-size="13" fill="#1976d2" font-weight="bold" text-anchor="middle">modifier</text>
+<text x="773.7" y="-59.0" font-size="10" fill="#78909c" text-anchor="middle">amod</text>
+<rect x="395.4" y="-119.5" width="65.0" height="30" rx="5" fill="white"/>
+<text x="427.9" y="-105.5" font-size="13" fill="#1976d2" font-weight="bold" text-anchor="middle">subject</text>
+<text x="427.9" y="-93.5" font-size="10" fill="#78909c" text-anchor="middle">nsubj</text>
+<rect x="679.1" y="-119.5" width="94.1" height="30" rx="5" fill="white"/>
+<text x="726.1" y="-105.5" font-size="13" fill="#1976d2" font-weight="bold" text-anchor="middle">preposition</text>
+<text x="726.1" y="-93.5" font-size="10" fill="#78909c" text-anchor="middle">case</text>
+<rect x="641.8" y="-154.0" width="79.5" height="30" rx="5" fill="white"/>
+<text x="681.6" y="-140.0" font-size="13" fill="#1976d2" font-weight="bold" text-anchor="middle">adverbial</text>
+<text x="681.6" y="-128.0" font-size="10" fill="#78909c" text-anchor="middle">obl</text>
+<rect x="261.9" y="-188.5" width="79.5" height="30" rx="5" fill="white"/>
+<text x="301.6" y="-174.5" font-size="13" fill="#1976d2" font-weight="bold" text-anchor="middle">adverbial</text>
+<text x="301.6" y="-162.5" font-size="10" fill="#78909c" text-anchor="middle">advmod</text>
+<rect x="705.2" y="-188.5" width="57.7" height="30" rx="5" fill="white"/>
+<text x="734.1" y="-174.5" font-size="13" fill="#1976d2" font-weight="bold" text-anchor="middle">punct.</text>
+<text x="734.1" y="-162.5" font-size="10" fill="#78909c" text-anchor="middle">punct</text>
+<path fill="none" stroke="#1976d2" stroke-width="2.5" d="M529.5 -252.0L529.5 -18"/>
+<path d="M522.5 -19.2L536.5 -19.2L529.5 -8.0Z" fill="#1976d2"/>
+<text x="539.5" y="-242.0" font-size="13" fill="#1976d2" font-weight="bold" text-anchor="start">predicate</text>
+<text x="73.8" y="20.0" font-size="22" fill="#263238" font-weight="bold" text-anchor="middle">Вчера</text>
+<text x="73.8" y="40.0" font-size="13" fill="#78909c" text-anchor="middle">adv.</text>
+<text x="200.0" y="20.0" font-size="22" fill="#263238" font-weight="bold" text-anchor="middle">маленькая</text>
+<text x="200.0" y="40.0" font-size="13" fill="#78909c" text-anchor="middle">adj.</text>
+<text x="326.3" y="20.0" font-size="22" fill="#263238" font-weight="bold" text-anchor="middle">кошка</text>
+<text x="326.3" y="40.0" font-size="13" fill="#78909c" text-anchor="middle">noun</text>
+<text x="427.9" y="20.0" font-size="22" fill="#263238" font-weight="bold" text-anchor="middle">долго</text>
+<text x="427.9" y="40.0" font-size="13" fill="#78909c" text-anchor="middle">adv.</text>
+<text x="529.5" y="20.0" font-size="22" fill="#263238" font-weight="bold" text-anchor="middle">спала</text>
+<text x="529.5" y="40.0" font-size="13" fill="#78909c" text-anchor="middle">verb</text>
+<text x="618.5" y="20.0" font-size="22" fill="#263238" font-weight="bold" text-anchor="middle">на</text>
+<text x="618.5" y="40.0" font-size="13" fill="#78909c" text-anchor="middle">prep.</text>
+<text x="713.6" y="20.0" font-size="22" fill="#263238" font-weight="bold" text-anchor="middle">теплом</text>
+<text x="713.6" y="40.0" font-size="13" fill="#78909c" text-anchor="middle">adj.</text>
+<text x="833.7" y="20.0" font-size="22" fill="#263238" font-weight="bold" text-anchor="middle">крыльце</text>
+<text x="833.7" y="40.0" font-size="13" fill="#78909c" text-anchor="middle">noun</text>
+<text x="938.7" y="20.0" font-size="22" fill="#263238" font-weight="bold" text-anchor="middle">.</text>
+<text x="938.7" y="40.0" font-size="13" fill="#78909c" text-anchor="middle">punct.</text>
+</g>
+</svg>

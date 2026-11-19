@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 698 608" width="698" height="608" font-family="PT Sans, Source Sans Pro, Arial, sans-serif" role="img">
+<rect width="698" height="608" rx="12" fill="white"/>
+<text x="409.0" y="30.0" font-size="15" fill="#1976d2" font-weight="bold" text-anchor="middle">Head candidate</text>
+<text x="30.0" y="332.0" font-size="15" fill="#1976d2" font-weight="bold" text-anchor="start">Word</text>
+<text x="187.0" y="96.0" font-size="15" fill="#263238" font-weight="bold" text-anchor="middle">ROOT</text>
+<text x="261.0" y="96.0" font-size="15" fill="#263238" font-weight="bold" text-anchor="middle">Я</text>
+<text x="335.0" y="96.0" font-size="15" fill="#263238" font-weight="bold" text-anchor="middle">видел</text>
+<text x="409.0" y="96.0" font-size="15" fill="#263238" font-weight="bold" text-anchor="middle">девочку</text>
+<text x="483.0" y="96.0" font-size="15" fill="#263238" font-weight="bold" text-anchor="middle">с</text>
+<text x="557.0" y="96.0" font-size="15" fill="#263238" font-weight="bold" text-anchor="middle">биноклем</text>
+<text x="631.0" y="96.0" font-size="15" fill="#263238" font-weight="bold" text-anchor="middle">.</text>
+<text x="138.0" y="152.0" font-size="16" fill="#263238" font-weight="bold" text-anchor="end">Я</text>
+<rect x="151" y="111" width="72" height="72" fill="#1976d2" fill-opacity="0.000"/>
+<rect x="225" y="111" width="72" height="72" fill="#eceff1"/>
+<rect x="299" y="111" width="72" height="72" fill="#1976d2" fill-opacity="1.000"/>
+<text x="335.0" y="153.0" font-size="17" fill="white" font-weight="bold" text-anchor="middle">1.00</text>
+<rect x="301" y="113" width="68" height="68" fill="none" stroke="#263238" stroke-width="3" rx="4"/>
+<rect x="373" y="111" width="72" height="72" fill="#1976d2" fill-opacity="0.000"/>
+<rect x="447" y="111" width="72" height="72" fill="#1976d2" fill-opacity="0.000"/>
+<rect x="521" y="111" width="72" height="72" fill="#1976d2" fill-opacity="0.000"/>
+<rect x="595" y="111" width="72" height="72" fill="#1976d2" fill-opacity="0.000"/>
+<text x="138.0" y="226.0" font-size="16" fill="#263238" font-weight="bold" text-anchor="end">видел</text>
+<rect x="151" y="185" width="72" height="72" fill="#1976d2" fill-opacity="1.000"/>
+<text x="187.0" y="227.0" font-size="17" fill="white" font-weight="bold" text-anchor="middle">1.00</text>
+<rect x="153" y="187" width="68" height="68" fill="none" stroke="#263238" stroke-width="3" rx="4"/>
+<rect x="225" y="185" width="72" height="72" fill="#1976d2" fill-opacity="0.000"/>
+<rect x="299" y="185" width="72" height="72" fill="#eceff1"/>
+<rect x="373" y="185" width="72" height="72" fill="#1976d2" fill-opacity="0.000"/>
+<rect x="447" y="185" width="72" height="72" fill="#1976d2" fill-opacity="0.000"/>
+<rect x="521" y="185" width="72" height="72" fill="#1976d2" fill-opacity="0.000"/>
+<rect x="595" y="185" width="72" height="72" fill="#1976d2" fill-opacity="0.000"/>
+<text x="138.0" y="300.0" font-size="16" fill="#263238" font-weight="bold" text-anchor="end">девочку</text>
+<rect x="151" y="259" width="72" height="72" fill="#1976d2" fill-opacity="0.000"/>
+<rect x="225" y="259" width="72" height="72" fill="#1976d2" fill-opacity="0.000"/>
+<rect x="299" y="259" width="72" height="72" fill="#1976d2" fill-opacity="1.000"/>
+<text x="335.0" y="301.0" font-size="17" fill="white" font-weight="bold" text-anchor="middle">1.00</text>
+<rect x="301" y="261" width="68" height="68" fill="none" stroke="#263238" stroke-width="3" rx="4"/>
+<rect x="373" y="259" width="72" height="72" fill="#eceff1"/>
+<rect x="447" y="259" width="72" height="72" fill="#1976d2" fill-opacity="0.000"/>
+<rect x="521" y="259" width="72" height="72" fill="#1976d2" fill-opacity="0.001"/>
+<rect x="595" y="259" width="72" height="72" fill="#1976d2" fill-opacity="0.000"/>
+<text x="138.0" y="374.0" font-size="16" fill="#263238" font-weight="bold" text-anchor="end">с</text>
+<rect x="151" y="333" width="72" height="72" fill="#1976d2" fill-opacity="0.000"/>
+<rect x="225" y="333" width="72" height="72" fill="#1976d2" fill-opacity="0.000"/>
+<rect x="299" y="333" width="72" height="72" fill="#1976d2" fill-opacity="0.000"/>
+<rect x="373" y="333" width="72" height="72" fill="#1976d2" fill-opacity="0.000"/>
+<rect x="447" y="333" width="72" height="72" fill="#eceff1"/>
+<rect x="521" y="333" width="72" height="72" fill="#1976d2" fill-opacity="1.000"/>
+<text x="557.0" y="375.0" font-size="17" fill="white" font-weight="bold" text-anchor="middle">1.00</text>
+<rect x="523" y="335" width="68" height="68" fill="none" stroke="#263238" stroke-width="3" rx="4"/>
+<rect x="595" y="333" width="72" height="72" fill="#1976d2" fill-opacity="0.000"/>
+<text x="138.0" y="448.0" font-size="16" fill="#263238" font-weight="bold" text-anchor="end">биноклем</text>
+<rect x="151" y="407" width="72" height="72" fill="#1976d2" fill-opacity="0.001"/>
+<rect x="225" y="407" width="72" height="72" fill="#1976d2" fill-opacity="0.004"/>
+<rect x="299" y="407" width="72" height="72" fill="#1976d2" fill-opacity="0.693"/>
+<text x="335.0" y="449.0" font-size="17" fill="white" font-weight="bold" text-anchor="middle">0.54</text>
+<rect x="301" y="409" width="68" height="68" fill="none" stroke="#263238" stroke-width="3" rx="4"/>
+<rect x="373" y="407" width="72" height="72" fill="#1976d2" fill-opacity="0.625"/>
+<text x="409.0" y="449.0" font-size="17" fill="white" font-weight="bold" text-anchor="middle">0.46</text>
+<rect x="447" y="407" width="72" height="72" fill="#1976d2" fill-opacity="0.000"/>
+<rect x="521" y="407" width="72" height="72" fill="#eceff1"/>
+<rect x="595" y="407" width="72" height="72" fill="#1976d2" fill-opacity="0.000"/>
+<text x="138.0" y="522.0" font-size="16" fill="#263238" font-weight="bold" text-anchor="end">.</text>
+<rect x="151" y="481" width="72" height="72" fill="#1976d2" fill-opacity="0.000"/>
+<rect x="225" y="481" width="72" height="72" fill="#1976d2" fill-opacity="0.001"/>
+<rect x="299" y="481" width="72" height="72" fill="#1976d2" fill-opacity="1.000"/>
+<text x="335.0" y="523.0" font-size="17" fill="white" font-weight="bold" text-anchor="middle">1.00</text>
+<rect x="301" y="483" width="68" height="68" fill="none" stroke="#263238" stroke-width="3" rx="4"/>
+<rect x="373" y="481" width="72" height="72" fill="#1976d2" fill-opacity="0.001"/>
+<rect x="447" y="481" width="72" height="72" fill="#1976d2" fill-opacity="0.000"/>
+<rect x="521" y="481" width="72" height="72" fill="#1976d2" fill-opacity="0.000"/>
+<rect x="595" y="481" width="72" height="72" fill="#eceff1"/>
+<text x="30.0" y="588.0" font-size="14" fill="#78909c" text-anchor="start">P(head | word): softmax of the biaffine scores over the row; a frame marks the head in the parse tree</text>
+</svg>

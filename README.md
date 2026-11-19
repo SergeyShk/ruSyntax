@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/SergeyShk/ruSyntax/master/docs/img/rusyntax.png" alt="ruSyntax" width="480">
+</p>
+
 <h1 align="center">ruSyntax</h1>
 
 <p align="center">
@@ -45,6 +49,19 @@ print([(word.form, word.head, word.deprel) for word in document.words])
 
 `parse_text` делит текст на предложения и слова сегментатором [anySeg](https://github.com/SergeyShk/anySeg), ставит словам часть речи и признаки морфологическим анализатором [ruMorph](https://github.com/SergeyShk/ruMorph) и находит вершину (номер слова с 1, 0 - корень) и тип связи каждого слова. Документ anySeg, уже разобранный морфологически, разбирает `parser.annotate(document)`, предложение со своими частями речи и признаками - `parser.parse(words, upos, feats)`, много предложений сразу - `parser.parse_many(sentences)`.
 
+## Качество и скорость
+
+LAS от сырого текста на тестовых частях трибанков UD 2.19 (скрипт CoNLL 2018), %:
+
+| Система | SynTagRus | Taiga | GSD | PUD | Poetry | Слов/с |
+| :------ | --------: | ----: | --: | --: | -----: | -----: |
+| ruSyntax | 87,8 | **81,5** | **84,9** | 87,8 | **83,3** | 28 702 |
+| spaCy ru_core_news_sm | 81,8 | 71,5 | 75,8 | 86,2 | 65,1 | 10 426 |
+| Stanza | 91,2 | 77,6 | 78,0 | 88,2 | 73,4 | 1 152 |
+| Stanza accurate | **93,1** | 80,5 | 81,2 | **89,5** | 76,4 | 404 |
+
+Модели Stanza обучены на SynTagRus, модель ruSyntax - на Taiga, GSD и Poetry. Скорость - один поток, вместе с морфологией; остальные системы, метрики и условия замера - на странице [Сравнение](https://sergeyshk.github.io/ruSyntax/performance/).
+
 ## Разработка
 
 Проект использует [uv](https://docs.astral.sh/uv/) для управления зависимостями, [maturin](https://www.maturin.rs/) для сборки модуля на Rust и [ruff](https://docs.astral.sh/ruff/) для линтинга и форматирования. Нужен [Rust](https://www.rust-lang.org/tools/install) 1.88 или новее.
@@ -81,7 +98,7 @@ uv run pre-commit install
 *   **docs** - документация MkDocs на русском и английском
 *   **tests** - тесты пакета Python
 *   **data** - модель и файл сверки ее прямого прохода на Rust с PyTorch
-*   **scripts** - выгрузка трибанков UD и обучение модели, проверка установленного пакета и лицензии крейтов модуля
+*   **scripts** - выгрузка трибанков UD и обучение модели, сравнение с другими анализаторами, картинки документации, проверка установленного пакета и лицензии крейтов модуля
 
 </details>
 
