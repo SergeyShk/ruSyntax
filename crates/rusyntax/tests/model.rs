@@ -37,12 +37,12 @@ fn check() -> Vec<Sentence> {
 
 #[test]
 fn model_matches_pytorch() {
-    let path = data("ru-syntax.bin");
-    if !path.exists() {
-        eprintln!("нет {}: сверка пропущена", path.display());
+    // В опубликованном крейте нет каталога data: без файла сверки тест пропускается, без модели - падает
+    if !data("check.conllu").exists() {
+        eprintln!("нет data/check.conllu: сверка пропущена");
         return;
     }
-    let parser = Parser::from_path(&path).expect("модель");
+    let parser = Parser::from_path(data("ru-syntax.bin")).expect("data/ru-syntax.bin");
     let sentences = check();
     let words: Vec<Vec<Word<'_>>> = sentences
         .iter()

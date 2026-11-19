@@ -31,7 +31,7 @@ lock: uv ## Обновить lock-файлы до последних верси�
 
 model: uv ## Скачать трибанки UD и обучить модель: data/ru-syntax.bin и data/check.conllu
 	uv run python $(SCRIPTS_PATH)/export_ud.py target/ud
-	uv run $(SCRIPTS_PATH)/train.py target/ud --output data/ru-syntax.bin --check data/check.conllu
+	uv run --python 3.13 $(SCRIPTS_PATH)/train.py target/ud --output data/ru-syntax.bin --check data/check.conllu
 
 lint: ruff mypy rust-lint ## Запустить все проверки кода
 

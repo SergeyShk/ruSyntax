@@ -28,6 +28,7 @@
 
 import argparse
 import json
+import platform
 import random
 import struct
 import time
@@ -304,6 +305,9 @@ class Parser(nn.Module):
         self.feats = nn.EmbeddingBag(
             len(vocab.feats) + 2, c["tag_dim"], mode="sum", padding_idx=PAD
         )
+        with torch.no_grad():
+            # Незнакомых пар в train нет: строка не учится, нулевая - как отсутствие признака
+            self.feats.weight[UNKNOWN].zero_()
         n_in = c["word_dim"] + 4 * c["suffix_dim"] + 2 * c["tag_dim"]
         self.lstm = nn.LSTM(
             n_in, c["hidden"], c["layers"], batch_first=True, bidirectional=True, dropout=DROPOUT
@@ -704,6 +708,7 @@ def write_check(
         parses (list[tuple[list[int], list[str]]]): Разбор квантованной модели
         path (Path): Файл CoNLL-U
     """
+    path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as file:
         for s, (heads, rels) in zip(sentences, parses, strict=True):
             for i, (form, upos, feats, head, rel) in enumerate(
@@ -753,6 +758,7 @@ def main() -> None:
         "select": list(SELECT),
         "tags": f"rumorph {metadata.version('rumorph')}",
         "torch": metadata.version("torch"),
+        "python": platform.python_version(),
         "seed": args.seed,
         "dev_las": {name: round(value, 2) for name, value in best.items()},
         "dev_las_int8": quantized,
