@@ -38,7 +38,7 @@ classifiers = [
     "Typing :: Typed",
     "Natural Language :: Russian",
 ]
-dependencies = ["anyseg>=0.3.1,<0.4", "rumorph>=0.6,<0.7"]
+dependencies = ["anyseg>=0.3.1,<0.5", "rumorph>=0.6,<0.7"]
 
 [project.urls]
 Homepage = "https://github.com/SergeyShk/ruSyntax"
@@ -61,6 +61,10 @@ cache-keys = [
     { file = "crates/**/*" },
     { file = "data/ru-syntax.bin" },
 ]
+
+[tool.uv.dependency-groups]
+# Новые pymdown-extensions требуют Python 3.11.5: иначе lock держит две версии и dependabot их не обновляет
+docs = { requires-python = ">=3.11.5" }
 
 [dependency-groups]
 test = ["pytest>=8.3", "pytest-cov>=6.0"]
