@@ -67,7 +67,8 @@ uv run pre-commit install
 *   **python/rusyntax** - пакет Python
 *   **docs** - документация MkDocs на русском и английском
 *   **tests** - тесты пакета Python
-*   **scripts** - проверка установленного пакета и лицензии крейтов модуля
+*   **data** - модель и файл сверки ее прямого прохода на Rust с PyTorch
+*   **scripts** - выгрузка трибанков UD и обучение модели, проверка установленного пакета и лицензии крейтов модуля
 
 </details>
 
@@ -77,4 +78,4 @@ uv run pre-commit install
 
 ## Лицензия
 
-Код распространяется под лицензией [MIT](https://github.com/SergeyShk/ruSyntax/blob/master/LICENSE.txt).
+Код распространяется под лицензией [MIT](https://github.com/SergeyShk/ruSyntax/blob/master/LICENSE.txt). Модель обучена на трибанках [UD_Russian-Taiga](https://github.com/UniversalDependencies/UD_Russian-Taiga), [UD_Russian-GSD](https://github.com/UniversalDependencies/UD_Russian-GSD) и [UD_Russian-Poetry](https://github.com/UniversalDependencies/UD_Russian-Poetry) и распространяется по лицензии CC BY-SA 4.0 ([LICENSE-MODEL.txt](https://github.com/SergeyShk/ruSyntax/blob/master/LICENSE-MODEL.txt)).

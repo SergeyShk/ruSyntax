@@ -67,7 +67,8 @@ Bug reports, ideas and pull requests are welcome - the [issues](https://github.c
 *   **python/rusyntax** - the Python package
 *   **docs** - MkDocs documentation in Russian and English
 *   **tests** - tests of the Python package
-*   **scripts** - the check of the installed package and the licenses of the crates of the module
+*   **data** - the model and the check of its Rust forward pass against PyTorch
+*   **scripts** - the export of the UD treebanks and the training of the model, the check of the installed package and the licenses of the crates of the module
 
 </details>
 
@@ -77,4 +78,4 @@ Bug reports, ideas and pull requests are welcome - the [issues](https://github.c
 
 ## License
 
-The code is distributed under the [MIT](https://github.com/SergeyShk/ruSyntax/blob/master/LICENSE.txt) license.
+The code is distributed under the [MIT](https://github.com/SergeyShk/ruSyntax/blob/master/LICENSE.txt) license. The model is trained on the treebanks [UD_Russian-Taiga](https://github.com/UniversalDependencies/UD_Russian-Taiga), [UD_Russian-GSD](https://github.com/UniversalDependencies/UD_Russian-GSD) and [UD_Russian-Poetry](https://github.com/UniversalDependencies/UD_Russian-Poetry) and is distributed under the CC BY-SA 4.0 license ([LICENSE-MODEL.txt](https://github.com/SergeyShk/ruSyntax/blob/master/LICENSE-MODEL.txt)).

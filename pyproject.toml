@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "rusyntax"
-version = "0.1.0.dev2"
+version = "0.1.0.dev3"
 description = "Fast Russian dependency parser written in Rust with a Python API"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -52,6 +52,8 @@ manifest-path = "crates/rusyntax-py/Cargo.toml"
 module-name = "rusyntax._rusyntax"
 python-source = "python"
 sdist-generator = "git"
+# Модель (CC BY-SA 4.0) в sdist не входит, пока ее нет в колесе: лицензия пакета - MIT
+exclude = [{ path = "data/**", format = "sdist" }]
 
 [tool.uv]
 cache-keys = [
