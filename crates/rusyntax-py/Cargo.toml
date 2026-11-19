@@ -1,6 +1,6 @@
 [package]
 name = "rusyntax-py"
-description = "Модуль Python для синтаксического анализатора ruSyntax"
+description = "Python module of the ruSyntax dependency parser"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

@@ -3,6 +3,7 @@ import pickle
 import re
 import shutil
 import threading
+import weakref
 from pathlib import Path
 
 import pytest
@@ -42,9 +43,53 @@ def test_parse(parser):
     assert all(deprel in parser.relations for _, deprel in relations)
 
 
-def test_parse_empty_and_unknown(parser):
+def test_parse_empty_and_unknown_feats(parser):
     assert parser.parse([], [], []) == []
-    relations = parser.parse(["Ёжик", "", "zzz"], ["FOO", "_", "X"], ["Bar=Baz", "", "_"])
+    relations = parser.parse(["Ёжик", "", "zzz"], ["NOUN", "X", "X"], ["Bar=Baz", "", "_"])
+    assert is_tree(relations)
+
+
+def test_parse_feats_mapping(parser):
+    expected = parser.parse(WORDS, UPOS, FEATS)
+    feats = [
+        {"Number": "Sing", "Gender": "Fem", "Case": "Nom"},
+        {"Gender": "Fem", "Tense": "Past"},
+        {"Case": "Acc"},
+        {},
+    ]
+    assert parser.parse(WORDS, UPOS, feats) == expected
+    with pytest.raises(TypeError, match="у слова 0 признаки и их значения должны быть строками"):
+        parser.parse(["Мама"], ["NOUN"], [{"Case": 1}])
+    with pytest.raises(
+        TypeError, match="элемент 0 должен быть строкой, словарем или None, а не int"
+    ):
+        parser.parse(["Мама"], ["NOUN"], [5])
+
+
+def test_parse_rumorph_analyses(parser):
+    # Готовые слова: теги ruMorph с контекстом, признаки - словарем
+    words = ["Кошка", "спала", "на", "крыльце", "."]
+    best = [analyses[0] for analyses in Analyzer().analyze_sentence(words)]
+    relations = parser.parse(words, [a.pos for a in best], [a.feats for a in best])
+    document = parser.parse_text("Кошка спала на крыльце.")
+    assert relations == list(zip(document.column("head"), document.column("deprel"), strict=True))
+
+
+def test_root_relation_only_at_root(parser):
+    for text in ["!!! ??? ... --- *** +++", "Мама мыла раму."]:
+        document = parser.parse_text(text)
+        heads, deprels = document.column("head"), document.column("deprel")
+        assert all(
+            (head == 0) == (deprel == "root") for head, deprel in zip(heads, deprels, strict=True)
+        )
+
+
+def test_long_sentence(parser):
+    # Предложение длиннее 1024 слов: вершина ищется в окне, время растет линейно
+    words = (["мама", "мыла", "раму", "а", "папа", "читал", "газету"] * 600)[:4000]
+    upos = ["NOUN", "VERB", "NOUN", "CCONJ", "NOUN", "VERB", "NOUN"] * 600
+    relations = parser.parse(words, upos[:4000], [None] * 4000)
+    assert len(relations) == 4000
     assert is_tree(relations)
 
 
@@ -74,6 +119,13 @@ def test_parse_many_matches_parse(parser):
         (([1], ["NOUN"], ["_"]), TypeError, "элемент 0 должен быть строкой, а не int"),
         ((["Мама"], [None], ["_"]), TypeError, "должен быть строкой, а не NoneType"),
         ((5, [], []), TypeError, "ожидается набор строк, а не int"),
+        ((["Мама"], ["noun"], ["_"]), ValueError, "неизвестная часть речи 'noun' у слова 0"),
+        (
+            (["Мама", "-"], ["NOUN", "PNCT"], ["_", "_"]),
+            ValueError,
+            "'PNCT' у слова 1: ожидается одна из 17",
+        ),
+        ((["Мама"], [""], ["_"]), ValueError, "неизвестная часть речи '' у слова 0"),
     ],
 )
 def test_parse_errors(parser, args, error, message):
@@ -115,6 +167,18 @@ def test_annotate_empty_document(parser):
 def test_annotate_needs_morphology(parser):
     document = Segmenter("ru").segment("Мама мыла раму.")
     with pytest.raises(ValueError, match=r"rumorph\.Analyzer\(\)\.annotate"):
+        parser.annotate(document)
+
+
+@pytest.mark.parametrize(
+    ("document", "message"),
+    [
+        ("Мама мыла раму.", "а не строка: текст разбирает parse_text"),
+        (5, "Ожидается документ anySeg или объект с column, sentences и set_columns, а не int"),
+    ],
+)
+def test_annotate_not_document(parser, document, message):
+    with pytest.raises(TypeError, match=message):
         parser.annotate(document)
 
 
@@ -172,6 +236,21 @@ def test_annotate_bad_types(parser):
         parser.annotate(document)
     document = FakeDocument([Sentence([0, 1, 2, 3])], upos=["NOUN", 5, "NOUN", "PUNCT"])
     with pytest.raises(TypeError, match="upos: элемент 1"):
+        parser.annotate(document)
+    document = FakeDocument(5)
+    with pytest.raises(TypeError, match="Предложения документа должны быть набором, а не int"):
+        parser.annotate(document)
+
+
+def test_annotate_bad_columns(parser):
+    document = FakeDocument([Sentence([0, 1, 2, 3])], upos=["NOUN", "verb", "NOUN", "PUNCT"])
+    with pytest.raises(ValueError, match="неизвестная часть речи 'verb' у слова 1"):
+        parser.annotate(document)
+    document = FakeDocument([Sentence([0, 1, 2, 3])], upos=["NOUN", "_", "NOUN", "PUNCT"])
+    with pytest.raises(ValueError, match="нет частей речи"):
+        parser.annotate(document)
+    document = FakeDocument([Sentence([0, 1, 2])], upos=["NOUN", "VERB", "NOUN"])
+    with pytest.raises(ValueError, match="разной длины: form 4, upos 3, feats 4"):
         parser.annotate(document)
 
 
@@ -232,6 +311,39 @@ def test_model_from_path(tmp_path, parser):
     assert parser.path is None
 
 
+def test_relative_model_path(tmp_path, monkeypatch):
+    shutil.copyfile(MODEL, tmp_path / "model.bin")
+    monkeypatch.chdir(tmp_path)
+    custom = Parser("model.bin")
+    assert custom.path == Path.cwd() / "model.bin"
+    data = pickle.dumps(custom)
+    monkeypatch.chdir(tmp_path.parent)
+    assert pickle.loads(data).path == custom.path
+
+
+def test_changed_model_file_is_reloaded(tmp_path):
+    model = tmp_path / "model.bin"
+    shutil.copyfile(MODEL, model)
+    first = Parser(model)
+    model.write_bytes(b"not a model")
+    with pytest.raises(ValueError, match="нет сигнатуры"):
+        Parser(model)
+    assert first.parse(WORDS, UPOS, FEATS)
+
+
+@pytest.mark.parametrize(
+    ("path", "error", "message"),
+    [
+        (5, TypeError, "Путь к модели должен быть строкой или os.PathLike, а не int"),
+        (b"model.bin", TypeError, "а не bytes"),
+        ("model\0.bin", ValueError, "нулевой символ"),
+    ],
+)
+def test_model_path_errors(path, error, message):
+    with pytest.raises(error, match=message):
+        Parser(path)
+
+
 def test_model_errors(tmp_path):
     missing = tmp_path / "нет.bin"
     with pytest.raises(FileNotFoundError, match="Нет файла модели") as error:
@@ -255,6 +367,44 @@ def test_sources(parser):
     assert sources["ud"] == "r2.19"
     assert set(sources["treebanks"]) == {"UD_Russian-Taiga", "UD_Russian-GSD", "UD_Russian-Poetry"}
     assert sources["tags"].startswith("rumorph ")
+
+
+def test_equality_and_weakref(tmp_path, parser):
+    assert Parser() == parser
+    assert hash(Parser()) == hash(parser)
+    model = tmp_path / "model.bin"
+    shutil.copyfile(MODEL, model)
+    assert Parser(model) == Parser(model)
+    assert hash(Parser(model)) == hash(Parser(model))
+    assert Parser(model) != parser
+    assert parser != "Parser()"
+    assert pickle.loads(pickle.dumps(parser)) == parser
+    assert weakref.ref(parser)() is parser
+
+
+def test_rumorph_tags_match_training():
+    # Модель обучена на тегах ruMorph версии из sources: теги установленного ruMorph должны совпадать
+    sentences, words = [], []
+    for line in [*(ROOT / "data" / "check.conllu").read_text(encoding="utf-8").splitlines(), ""]:
+        if line:
+            words.append(line.split("\t"))
+        elif words:
+            sentences.append(words)
+            words = []
+    analyzer = Analyzer()
+    total = upos = feats = 0
+    for sentence in sentences:
+        best = [
+            analyses[0] for analyses in analyzer.analyze_sentence([word[1] for word in sentence])
+        ]
+        for word, analysis in zip(sentence, best, strict=True):
+            total += 1
+            upos += word[3] != analysis.pos
+            pairs = sorted(analysis.feats.items(), key=lambda pair: pair[0].lower())
+            feats += word[5] != ("|".join(f"{name}={value}" for name, value in pairs) or "_")
+    assert total > 4000
+    assert upos <= total * 0.005, f"части речи расходятся у {upos} из {total} слов"
+    assert feats <= total * 0.005, f"признаки расходятся у {feats} из {total} слов"
 
 
 def test_pickle_and_copy(tmp_path, parser):
