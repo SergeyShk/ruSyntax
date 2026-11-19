@@ -139,7 +139,12 @@ def test_parse_errors(parser, args, error, message):
         (5, TypeError, "Ожидается набор предложений, а не int"),
         (["abc"], TypeError, "Предложение 0 должно быть тройкой, а не str"),
         ([(WORDS, UPOS)], ValueError, "получено элементов: 2"),
-        ([(WORDS, UPOS, FEATS[:2])], ValueError, "признаков 2"),
+        ([(WORDS, UPOS, FEATS[:2])], ValueError, "У каждого слова предложения 0 .*признаков 2"),
+        (
+            [(WORDS, UPOS, FEATS), (["Мама", "мыла"], ["NOUN", "verb"], ["_", "_"])],
+            ValueError,
+            "'verb' у слова 1 предложения 1:",
+        ),
     ],
 )
 def test_parse_many_errors(parser, sentences, error, message):

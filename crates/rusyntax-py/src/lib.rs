@@ -223,15 +223,20 @@ fn feats(value: &Bound<'_, PyAny>) -> PyResult<Vec<String>> {
     })
 }
 
-/// Части речи - из 17 частей речи UD заглавными буквами; `first` - номер первого слова в сообщении
-fn check_upos(upos: &[String], first: usize) -> PyResult<()> {
+/// « предложения 3» - номер предложения в сообщении об ошибке `parse_many`
+fn of_sentence(sentence: Option<usize>) -> String {
+    sentence.map_or_else(String::new, |number| format!(" предложения {number}"))
+}
+
+/// Части речи - из 17 частей речи UD заглавными буквами; `sentence` - номер предложения в `parse_many`
+fn check_upos(upos: &[String], sentence: Option<usize>) -> PyResult<()> {
     match upos.iter().position(|tag| !UPOS.contains(&tag.as_str())) {
         None => Ok(()),
         Some(at) => Err(PyValueError::new_err(format!(
-            "upos: неизвестная часть речи '{}' у слова {}: ожидается одна из 17 частей речи UD \
+            "upos: неизвестная часть речи '{}' у слова {at}{}: ожидается одна из 17 частей речи UD \
              заглавными буквами ({})",
             upos[at],
-            first + at,
+            of_sentence(sentence),
             UPOS.join(", ")
         ))),
     }
@@ -243,23 +248,26 @@ type Parsed = Vec<(usize, Py<PyString>)>;
 /// Слова одного предложения: формы, части речи и признаки одной длины
 type Sentence = (Vec<String>, Vec<String>, Vec<String>);
 
+/// Слова предложения; `number` - номер предложения в `parse_many` для сообщений об ошибках
 fn sentence(
     words: &Bound<'_, PyAny>,
     upos: &Bound<'_, PyAny>,
     feats: &Bound<'_, PyAny>,
+    number: Option<usize>,
 ) -> PyResult<Sentence> {
     let words = strings(words, "words", None)?;
     let upos = strings(upos, "upos", None)?;
     let feats = self::feats(feats)?;
     if upos.len() != words.len() || feats.len() != words.len() {
         return Err(PyValueError::new_err(format!(
-            "У каждого слова должны быть часть речи и признаки: слов {}, частей речи {}, признаков {}",
+            "У каждого слова{} должны быть часть речи и признаки: слов {}, частей речи {}, признаков {}",
+            of_sentence(number),
             words.len(),
             upos.len(),
             feats.len()
         )));
     }
-    check_upos(&upos, 0)?;
+    check_upos(&upos, number)?;
     Ok((words, upos, feats))
 }
 
@@ -463,7 +471,7 @@ impl Parser {
         upos: &Bound<'_, PyAny>,
         feats: &Bound<'_, PyAny>,
     ) -> PyResult<Parsed> {
-        let sentence = sentence(words, upos, feats)?;
+        let sentence = sentence(words, upos, feats, None)?;
         let relations = parse_all(py, &self.parser, &[sentence])?;
         Ok(self.named(py, relations.into_iter().next().unwrap_or_default()))
     }
@@ -513,7 +521,7 @@ impl Parser {
                     parts.len()
                 )));
             };
-            parsed.push(sentence(words, upos, feats)?);
+            parsed.push(sentence(words, upos, feats, Some(number))?);
         }
         Ok((parse_all(py, &self.parser, &parsed)?.into_iter())
             .map(|relations| self.named(py, relations))
@@ -571,7 +579,7 @@ impl Parser {
                  например rumorph.Analyzer().annotate(document)",
             ));
         }
-        check_upos(&upos, 0)?;
+        check_upos(&upos, None)?;
         let feats = feats(&column("feats")?)?;
         if upos.len() != forms.len() || feats.len() != forms.len() {
             return Err(PyValueError::new_err(format!(
