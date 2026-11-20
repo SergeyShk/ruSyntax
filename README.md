@@ -10,10 +10,15 @@
 
 <p align="center">
   <a href="https://sergeyshk.github.io/ruSyntax/">Документация</a> ·
+  <a href="https://pypi.org/project/rusyntax/">PyPI</a> ·
+  <a href="https://crates.io/crates/rusyntax">crates.io</a> ·
   <a href="https://github.com/SergeyShk/ruSyntax/blob/master/README.en.md">English</a>
 </p>
 
 <p align="center">
+  <a href="https://pypi.org/project/rusyntax/"><img src="https://img.shields.io/pypi/v/rusyntax?logo=pypi&logoColor=FFE873" alt="Версия"></a>
+  <a href="https://pypi.org/project/rusyntax/"><img src="https://img.shields.io/pypi/pyversions/rusyntax.svg?logo=python&logoColor=FFE873" alt="Поддерживаемые версии Python"></a>
+  <a href="https://crates.io/crates/rusyntax"><img src="https://img.shields.io/crates/v/rusyntax?logo=rust" alt="Крейт"></a>
   <a href="https://github.com/SergeyShk/ruSyntax/actions/workflows/ci.yml"><img src="https://github.com/SergeyShk/ruSyntax/actions/workflows/ci.yml/badge.svg" alt="Сборка"></a>
   <a href="https://github.com/astral-sh/ruff"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json" alt="Ruff"></a>
   <a href="https://github.com/SergeyShk/ruSyntax/blob/master/LICENSE.txt"><img src="https://img.shields.io/github/license/sergeyshk/rusyntax.svg" alt="Лицензия"></a>
@@ -22,9 +27,6 @@
 ---
 
 **ruSyntax** - синтаксический анализатор русского языка: ядро на Rust и API для Python. Для каждого слова предложения анализатор находит вершину и тип синтаксической связи в разметке [Universal Dependencies](https://universaldependencies.org/).
-
-> [!WARNING]
-> Проект в разработке: до версии 0.1.0 API может меняться. Версии `0.1.0.devN` публикуются на TestPyPI.
 
 ## Установка
 
@@ -55,10 +57,10 @@ LAS от сырого текста на тестовых частях триба
 
 | Система | SynTagRus | Taiga | GSD | PUD | Poetry | Слов/с |
 | :------ | --------: | ----: | --: | --: | -----: | -----: |
-| ruSyntax | 87,8 | **81,5** | **84,9** | 87,8 | **83,3** | 28 702 |
-| spaCy ru_core_news_sm | 81,8 | 71,5 | 75,8 | 86,2 | 65,1 | 10 426 |
-| Stanza | 91,2 | 77,6 | 78,0 | 88,2 | 73,4 | 1 152 |
-| Stanza accurate | **93,1** | 80,5 | 81,2 | **89,5** | 76,4 | 404 |
+| ruSyntax | 87,8 | **81,5** | **84,9** | 87,8 | **83,3** | 29 526 |
+| spaCy ru_core_news_sm | 81,8 | 71,5 | 75,8 | 86,2 | 65,1 | 10 368 |
+| Stanza | 91,2 | 77,6 | 78,0 | 88,2 | 73,4 | 1 098 |
+| Stanza accurate | **93,1** | 80,5 | 81,2 | **89,5** | 76,4 | 428 |
 
 Модели Stanza обучены на SynTagRus, модель ruSyntax - на Taiga, GSD и Poetry. Скорость - один поток, вместе с морфологией; остальные системы, метрики и условия замера - на странице [Сравнение](https://sergeyshk.github.io/ruSyntax/performance/).
 

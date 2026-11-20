@@ -4,9 +4,6 @@
 
 **ruSyntax** is a dependency parser of Russian: a Rust core with a Python API. For every word of a sentence the parser finds its head and the relation between them in the [Universal Dependencies](https://universaldependencies.org/) annotation. The [anySeg](https://github.com/SergeyShk/anySeg) segmenter splits the text into sentences and words, the [ruMorph](https://github.com/SergeyShk/ruMorph) morphological analyzer gives the parts of speech and features.
 
-!!! warning "Work in progress"
-    The API may change until version 0.1.0. Versions `0.1.0.devN` are published on TestPyPI.
-
 === "Code"
 
     ``` python
