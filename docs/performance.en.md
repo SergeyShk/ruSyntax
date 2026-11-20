@@ -1,6 +1,6 @@
 # Comparison
 
-From raw text ruSyntax is the most accurate of the compared parsers on the Taiga, GSD and Poetry treebanks and on par with Stanza on PUD; on SynTagRus Stanza is ahead - its models are trained on SynTagRus, which ruSyntax has not seen ([model](model.md)). At the same time ruSyntax parses about 29 thousand words per second in one thread together with the ruMorph morphology - 2.8 times faster than spaCy, 25 times faster than Stanza and 70 times faster than Stanza with a transformer - and loads in 0.04 s.
+From raw text ruSyntax is the most accurate of the compared parsers on the Taiga, GSD and Poetry treebanks and on par with Stanza on PUD; on SynTagRus Stanza is ahead - its models are trained on SynTagRus, which ruSyntax has not seen ([model](model.md)). At the same time ruSyntax parses about 30 thousand words per second in one thread together with the ruMorph morphology - 2.8 times faster than spaCy, 27 times faster than Stanza and 69 times faster than Stanza with a transformer - and loads in 0.08 s.
 
 ## Quality { #quality }
 
@@ -57,14 +57,14 @@ Parsing the gold tokens of SynTagRus test (157,706 words) in one thread, the bes
 
 | System | Words/s | Loading, s | Memory, MB |
 | :----- | ------: | ---------: | ---------: |
-| ruSyntax | 28,702 | **0.04** | **173** |
-| spaCy ru_core_news_sm | 10,426 | 1.33 | 1,004 |
-| UDPipe 1 | 6,410 | 2.01 | 458 |
-| Stanza | 1,152 | 2.30 | 7,516 |
-| Stanza accurate | 404 | 4.05 | 5,981 |
-| Slovnet (Natasha) | 56,161 | 0.24 | 362 |
+| ruSyntax | 29,526 | **0.08** | **160** |
+| spaCy ru_core_news_sm | 10,368 | 2.00 | 1,007 |
+| UDPipe 1 | 6,318 | 1.73 | 467 |
+| Stanza | 1,098 | 2.84 | 6,638 |
+| Stanza accurate | 428 | 4.66 | 5,993 |
+| Slovnet (Natasha) | 58,583 | 0.27 | 360 |
 
-Slovnet is faster, but picks heads without a tree, gives no morphology and is 5 to 31 points behind in LAS. Stanza accurate was measured on the first 20,006 words. The memory peak depends on the amount of text per call: every system except Stanza accurate got all of SynTagRus test in one call, so its peak is not comparable with the others. Measured on an Apple M3 Pro, Python 3.11, load average 4-6 (other processes were running on the machine).
+Slovnet is faster, but picks heads without a tree, gives no morphology and is 5 to 31 points behind in LAS. Stanza accurate was measured on the first 20,006 words. The memory peak depends on the amount of text per call: every system except Stanza accurate got all of SynTagRus test in one call, so its peak is not comparable with the others. Measured on an Apple M3 Pro, Python 3.11, load average 2-3.
 
 ## Reproducing { #reproduce }
 

@@ -55,10 +55,10 @@ LAS from raw text on the test parts of the UD 2.19 treebanks (CoNLL 2018 script)
 
 | System | SynTagRus | Taiga | GSD | PUD | Poetry | Words/s |
 | :----- | --------: | ----: | --: | --: | -----: | ------: |
-| ruSyntax | 87.8 | **81.5** | **84.9** | 87.8 | **83.3** | 28,702 |
-| spaCy ru_core_news_sm | 81.8 | 71.5 | 75.8 | 86.2 | 65.1 | 10,426 |
-| Stanza | 91.2 | 77.6 | 78.0 | 88.2 | 73.4 | 1,152 |
-| Stanza accurate | **93.1** | 80.5 | 81.2 | **89.5** | 76.4 | 404 |
+| ruSyntax | 87.8 | **81.5** | **84.9** | 87.8 | **83.3** | 29,526 |
+| spaCy ru_core_news_sm | 81.8 | 71.5 | 75.8 | 86.2 | 65.1 | 10,368 |
+| Stanza | 91.2 | 77.6 | 78.0 | 88.2 | 73.4 | 1,098 |
+| Stanza accurate | **93.1** | 80.5 | 81.2 | **89.5** | 76.4 | 428 |
 
 The Stanza models are trained on SynTagRus, the ruSyntax model on Taiga, GSD and Poetry. The speed is one thread, with the morphology; other systems, metrics and measurement conditions are on the [Comparison](https://sergeyshk.github.io/ruSyntax/en/performance/) page.
 
