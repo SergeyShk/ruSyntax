@@ -8,7 +8,7 @@ use std::time::SystemTime;
 
 use pyo3::exceptions::{PyOSError, PyOverflowError, PyTypeError, PyValueError};
 use pyo3::prelude::*;
-use pyo3::types::{PyDict, PyMapping, PyString, PyTuple};
+use pyo3::types::{PyDict, PyList, PyMapping, PyString, PyTuple};
 use pyo3::{IntoPyObjectExt, intern};
 
 /// Модель пакета: веса `data/ru-syntax.bin` (CC BY-SA 4.0, LICENSE-MODEL.txt) вшиты в модуль
@@ -242,9 +242,6 @@ fn check_upos(upos: &[String], sentence: Option<usize>) -> PyResult<()> {
     }
 }
 
-/// Разбор предложения для Python: вершина и тип связи каждого слова
-type Parsed = Vec<(usize, Py<PyString>)>;
-
 /// Слова одного предложения: формы, части речи и признаки одной длины
 type Sentence = (Vec<String>, Vec<String>, Vec<String>);
 
@@ -273,11 +270,11 @@ fn sentence(
 
 /// Разбор предложений без GIL кусками по `CHUNK`: между ними срабатывает Ctrl+C. Вывод - вершина
 /// и номер связи каждого слова
-fn parse_all(
+fn parse_all<'p>(
     py: Python<'_>,
-    parser: &rusyntax::Parser,
+    parser: &'p rusyntax::Parser,
     sentences: &[Sentence],
-) -> PyResult<Vec<Vec<(usize, usize)>>> {
+) -> PyResult<Vec<Vec<rusyntax::Relation<'p>>>> {
     let mut out = Vec::with_capacity(sentences.len());
     for chunk in sentences.chunks(CHUNK) {
         let parsed = py.detach(|| {
@@ -289,13 +286,7 @@ fn parse_all(
                         .collect()
                 })
                 .collect();
-            (parser.parse_many(&words).into_iter())
-                .map(|relations| {
-                    (relations.into_iter())
-                        .map(|relation| (relation.head, relation.label))
-                        .collect::<Vec<_>>()
-                })
-                .collect::<Vec<_>>()
+            parser.parse_many(&words)
         });
         out.extend(parsed);
         py.check_signals()?;
@@ -350,11 +341,29 @@ impl Parser {
         Ok((segmenter.bind(py).clone(), analyzer.bind(py).clone()))
     }
 
-    /// Вершины и связи строками Python
-    fn named(&self, py: Python<'_>, relations: Vec<(usize, usize)>) -> Parsed {
-        (relations.into_iter())
-            .map(|(head, label)| (head, self.relations[label].clone_ref(py)))
-            .collect()
+    /// Связи предложения для Python: вершина и тип связи, с `probs` - и их вероятности
+    fn named<'py>(
+        &self,
+        py: Python<'py>,
+        relations: &[rusyntax::Relation<'_>],
+        probs: bool,
+    ) -> PyResult<Bound<'py, PyList>> {
+        let items = relations.iter().map(|relation| {
+            let deprel = self.relations[relation.label].clone_ref(py);
+            if probs {
+                let (head_prob, deprel_prob) = (relation.head_prob, relation.deprel_prob);
+                (
+                    relation.head,
+                    deprel,
+                    f64::from(head_prob),
+                    f64::from(deprel_prob),
+                )
+                    .into_bound_py_any(py)
+            } else {
+                (relation.head, deprel).into_bound_py_any(py)
+            }
+        });
+        PyList::new(py, items.collect::<PyResult<Vec<_>>>()?)
     }
 }
 
@@ -430,13 +439,20 @@ impl Parser {
         self.parser.relations().to_vec()
     }
 
-    /// Описание обучения модели: релиз UD, трибанки, LAS на dev и т. д.; None - если его нет
+    /// Описание модели: контрольная сумма crc32 (отличает одну модель от другой) и описание
+    /// обучения из файла - релиз UD, трибанки, LAS на dev и т. д.
     #[getter]
-    fn sources<'py>(&self, py: Python<'py>) -> PyResult<Option<Bound<'py, PyAny>>> {
-        self.parser
-            .sources()
-            .map(|text| py.import("json")?.call_method1("loads", (text,)))
-            .transpose()
+    fn sources<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyDict>> {
+        let sources = match self.parser.sources() {
+            Some(text) => py
+                .import("json")?
+                .call_method1("loads", (text,))?
+                .cast_into::<PyDict>()
+                .map_err(|_| PyValueError::new_err("описание обучения модели - не объект JSON"))?,
+            None => PyDict::new(py),
+        };
+        sources.set_item("crc32", format!("{:08x}", self.parser.checksum()))?;
+        Ok(sources)
     }
 
     /// Разбор предложения
@@ -452,9 +468,13 @@ impl Parser {
     ///     feats (Iterable[str | Mapping[str, str] | None]): Признаки в записи CoNLL-U
     ///         (Case=Nom|Number=Sing) или словарем, как feats у ruMorph; `_`, пустая строка,
     ///         пустой словарь и None - без признаков
+    ///     probs (bool): Добавить вероятности вершины и типа связи по модели
     ///
     /// Вывод:
-    ///     list[tuple[int, str]]: Номер вершины (0 - корень) и тип связи каждого слова
+    ///     list[tuple[int, str]]: Номер вершины (0 - корень) и тип связи каждого слова; с probs -
+    ///         четверки: еще вероятность вершины среди всех слов предложения и корня (у предложений
+    ///         длиннее 1024 слов - среди 64 слов с каждой стороны и корня) и вероятность типа
+    ///         связи при этой вершине (у корня root - 1)
     ///
     /// Исключения:
     ///     ValueError: Если длины words, upos и feats не совпадают или часть речи не из 17
@@ -462,18 +482,24 @@ impl Parser {
     ///     TypeError: Если вход - не набор строк
     ///
     /// Пример использования:
-    ///     >>> Parser().parse(["Спасибо", "!"], ["INTJ", "PUNCT"], [None, None])
+    ///     >>> parser = Parser()
+    ///     >>> parser.parse(["Спасибо", "!"], ["INTJ", "PUNCT"], [None, None])
     ///     [(0, 'root'), (1, 'punct')]
-    fn parse(
+    ///     >>> [(head, deprel, round(p, 3), round(q, 3)) for head, deprel, p, q in
+    ///     ...  parser.parse(["Спасибо", "!"], ["INTJ", "PUNCT"], [None, None], probs=True)]
+    ///     [(0, 'root', 1.0, 1.0), (1, 'punct', 1.0, 1.0)]
+    #[pyo3(signature = (words, upos, feats, *, probs = false))]
+    fn parse<'py>(
         &self,
-        py: Python<'_>,
-        words: &Bound<'_, PyAny>,
-        upos: &Bound<'_, PyAny>,
-        feats: &Bound<'_, PyAny>,
-    ) -> PyResult<Parsed> {
+        py: Python<'py>,
+        words: &Bound<'py, PyAny>,
+        upos: &Bound<'py, PyAny>,
+        feats: &Bound<'py, PyAny>,
+        probs: bool,
+    ) -> PyResult<Bound<'py, PyList>> {
         let sentence = sentence(words, upos, feats, None)?;
         let relations = parse_all(py, &self.parser, &[sentence])?;
-        Ok(self.named(py, relations.into_iter().next().unwrap_or_default()))
+        self.named(py, relations.first().map_or(&[], Vec::as_slice), probs)
     }
 
     /// Разбор нескольких предложений
@@ -485,9 +511,11 @@ impl Parser {
     /// Аргументы:
     ///     sentences (Iterable[tuple[Iterable[str], Iterable[str], Iterable[str | Mapping[str, str] | None]]]):
     ///         Предложения - тройки (формы, части речи, признаки), как у parse
+    ///     probs (bool): Добавить вероятности вершины и типа связи, как у parse
     ///
     /// Вывод:
-    ///     list[list[tuple[int, str]]]: Вершины и связи каждого предложения
+    ///     list[list[tuple[int, str]]]: Вершины и связи каждого предложения; с probs - четверки,
+    ///         как у parse
     ///
     /// Исключения:
     ///     ValueError: Если у предложения не три набора, их длины не совпадают или часть
@@ -497,7 +525,13 @@ impl Parser {
     /// Пример использования:
     ///     >>> Parser().parse_many([(["Спасибо", "!"], ["INTJ", "PUNCT"], ["_", "_"])])
     ///     [[(0, 'root'), (1, 'punct')]]
-    fn parse_many(&self, py: Python<'_>, sentences: &Bound<'_, PyAny>) -> PyResult<Vec<Parsed>> {
+    #[pyo3(signature = (sentences, *, probs = false))]
+    fn parse_many<'py>(
+        &self,
+        py: Python<'py>,
+        sentences: &Bound<'py, PyAny>,
+        probs: bool,
+    ) -> PyResult<Vec<Bound<'py, PyList>>> {
         let items = sentences
             .try_iter()
             .map_err(|_| type_error("Ожидается набор предложений", sentences))?;
@@ -523,9 +557,9 @@ impl Parser {
             };
             parsed.push(sentence(words, upos, feats, Some(number))?);
         }
-        Ok((parse_all(py, &self.parser, &parsed)?.into_iter())
-            .map(|relations| self.named(py, relations))
-            .collect())
+        (parse_all(py, &self.parser, &parsed)?.iter())
+            .map(|relations| self.named(py, relations, probs))
+            .collect()
     }
 
     /// Разбор документа сегментатора anySeg
@@ -635,9 +669,9 @@ impl Parser {
         }
         let (mut heads, mut deprels) = (Vec::new(), Vec::new());
         for relations in parse_all(py, &self.parser, &sentences)? {
-            for (head, label) in relations {
-                heads.push(head);
-                deprels.push(self.relations[label].clone_ref(py));
+            for relation in relations {
+                heads.push(relation.head);
+                deprels.push(self.relations[relation.label].clone_ref(py));
             }
         }
         let columns = PyDict::new(py);
@@ -652,30 +686,67 @@ impl Parser {
     /// Описание:
     ///     Текст делится на предложения и слова сегментатором anySeg, слова получают лемму, часть
     ///     речи и признаки от ruMorph с контекстом, затем - вершину и тип связи (annotate).
-    ///     Сегментатор и анализатор создаются при первом вызове и дальше переиспользуются
+    ///     Сегментатор и анализатор по умолчанию создаются при первом вызове и дальше
+    ///     переиспользуются; свои - например, со своими сокращениями или словами - передаются
+    ///     параметрами
     ///
     /// Аргументы:
     ///     text (str): Текст
+    ///     segmenter (anyseg.Segmenter | None): Сегментатор anySeg или объект с методом segment;
+    ///         None - Segmenter("ru")
+    ///     analyzer (rumorph.Analyzer | None): Морфологический анализатор ruMorph или объект
+    ///         с методом annotate; None - Analyzer()
     ///
     /// Вывод:
     ///     anyseg.Document: Документ со столбцами lemma, upos, feats, head и deprel
     ///
     /// Исключения:
-    ///     TypeError: Если текст не строка
+    ///     TypeError: Если текст не строка, у сегментатора нет segment или у анализатора нет
+    ///         annotate
     ///
     /// Пример использования:
     ///     >>> document = Parser().parse_text("Мама мыла раму.")
     ///     >>> [(word.form, word.upos, word.head, word.deprel) for word in document.words]
     ///     [('Мама', 'NOUN', 2, 'nsubj'), ('мыла', 'VERB', 0, 'root'), ('раму', 'NOUN', 2, 'obj'), ('.', 'PUNCT', 2, 'punct')]
+    #[pyo3(signature = (text, *, segmenter = None, analyzer = None))]
     fn parse_text<'py>(
         &self,
         py: Python<'py>,
         text: &Bound<'py, PyAny>,
+        segmenter: Option<Bound<'py, PyAny>>,
+        analyzer: Option<Bound<'py, PyAny>>,
     ) -> PyResult<Bound<'py, PyAny>> {
         if !text.is_instance_of::<PyString>() {
             return Err(type_error("Текст должен быть строкой", text));
         }
-        let (segmenter, analyzer) = self.tools(py)?;
+        for (tool, method, what) in [
+            (
+                &segmenter,
+                "segment",
+                "segmenter: ожидается сегментатор anySeg (с методом segment)",
+            ),
+            (
+                &analyzer,
+                "annotate",
+                "analyzer: ожидается анализатор ruMorph (с методом annotate)",
+            ),
+        ] {
+            if let Some(tool) = tool
+                && !tool.hasattr(method)?
+            {
+                return Err(type_error(what, tool));
+            }
+        }
+        let (segmenter, analyzer) = match (segmenter, analyzer) {
+            (Some(segmenter), Some(analyzer)) => (segmenter, analyzer),
+            (segmenter, analyzer) => {
+                let (default_segmenter, default_analyzer) = self.tools(py)?;
+                (
+                    segmenter.unwrap_or(default_segmenter),
+                    analyzer.unwrap_or(default_analyzer),
+                )
+            }
+        };
         let document = segmenter.call_method1(intern!(py, "segment"), (text,))?;
         analyzer.call_method1(intern!(py, "annotate"), (&document,))?;
         self.annotate(py, &document)?;

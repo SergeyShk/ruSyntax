@@ -87,8 +87,17 @@ pub(crate) struct Input<'a> {
     pub feats: &'a str,
 }
 
-/// Вершина (0 - корень) и номер связи каждого слова
-pub(crate) type Parse = Vec<(usize, usize)>;
+/// Связь слова: вершина (0 - корень), номер связи и их вероятности
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub(crate) struct Link {
+    pub head: usize,
+    pub label: usize,
+    pub head_prob: f32,
+    pub label_prob: f32,
+}
+
+/// Связи слов предложения
+pub(crate) type Parse = Vec<Link>;
 
 #[derive(Debug)]
 pub(crate) struct Model {
@@ -117,6 +126,8 @@ pub(crate) struct Model {
     root: Option<usize>,
     pub relations: Vec<String>,
     pub sources: Option<String>,
+    /// CRC32 файла после заголовка
+    pub checksum: u32,
 }
 
 impl Model {
@@ -244,6 +255,7 @@ impl Model {
             root,
             relations,
             sources,
+            checksum: format::checksum(data),
         })
     }
 
@@ -328,7 +340,7 @@ impl Model {
         let mut u = vec![0.0f32; n * a];
         self.arc.apply_all(&dep, &self.arc_bias, &mut u);
         let score = |i: usize, j: usize| dot(&u[i * a..(i + 1) * a], &head[j * a..(j + 1) * a]);
-        let heads = tree::heads(n, &score);
+        let (heads, head_probs) = tree::heads(n, &score);
         let rel_dep = self.rel_dep.apply(state, n);
         let rel_head = self.rel_head.apply(state, n);
         let mut pairs = vec![0.0f32; (n - 1) * 2 * r];
@@ -343,14 +355,35 @@ impl Model {
         (1..n)
             .zip(scores.chunks_exact(labels))
             .map(|(i, row)| {
-                let label = match self.root {
-                    Some(root) if heads[i] == 0 => root,
-                    root => best_label(row, root),
+                // У корня связь root - по правилу, а не по оценке
+                let (label, label_prob) = match self.root {
+                    Some(root) if heads[i] == 0 => (root, 1.0),
+                    root => {
+                        let label = best_label(row, root);
+                        (label, label_prob(row, label, root))
+                    }
                 };
-                (heads[i], label)
+                Link {
+                    head: heads[i],
+                    label,
+                    head_prob: head_probs[i],
+                    label_prob,
+                }
             })
             .collect()
     }
+}
+
+/// Вероятность связи `label` - softmax оценок связей без `skip` (связи корня у слова с вершиной не корень)
+fn label_prob(row: &[f32], label: usize, skip: Option<usize>) -> f32 {
+    let values = || {
+        (row.iter().enumerate())
+            .filter(move |&(other, _)| Some(other) != skip || other == label)
+            .map(|(_, &value)| f64::from(value))
+    };
+    let max = values().fold(f64::NEG_INFINITY, f64::max);
+    let sum: f64 = values().map(|value| (value - max).exp()).sum();
+    ((f64::from(row[label]) - max).exp() / sum) as f32
 }
 
 /// Связь с лучшей оценкой, кроме `skip` (если других связей нет - `skip`)

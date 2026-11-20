@@ -65,7 +65,7 @@ impl<'a> Word<'a> {
 }
 
 /// Связь слова с вершиной
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 #[non_exhaustive]
 pub struct Relation<'p> {
     /// Номер вершины среди слов предложения с 1; 0 - корень предложения
@@ -75,6 +75,11 @@ pub struct Relation<'p> {
     pub deprel: &'p str,
     /// Номер типа связи в [`Parser::relations`]
     pub label: usize,
+    /// Вероятность вершины по модели: softmax оценок всех кандидатов в вершины слова (у предложений
+    /// длиннее 1024 слов - кандидатов в окне)
+    pub head_prob: f32,
+    /// Вероятность типа связи при этой вершине: softmax оценок связей; у корня `root` - 1
+    pub deprel_prob: f32,
 }
 
 /// Синтаксический анализатор: модель в памяти. Разбор не меняет анализатор, поэтому один анализатор
@@ -127,6 +132,12 @@ impl Parser {
         self.model.sources.as_deref()
     }
 
+    /// Контрольная сумма модели - CRC32 файла после заголовка: отличает одну модель от другой
+    #[must_use]
+    pub fn checksum(&self) -> u32 {
+        self.model.checksum
+    }
+
     /// Разбор предложения: связь каждого слова в том же порядке; у пустого предложения - пустой список
     #[must_use]
     pub fn parse(&self, words: &[Word<'_>]) -> Vec<Relation<'_>> {
@@ -158,10 +169,12 @@ impl Parser {
             let batch: Vec<&[Input<'_>]> = group.iter().map(|&i| inputs[i].as_slice()).collect();
             for (&i, parse) in group.iter().zip(self.model.parse_group(&batch)) {
                 out[i] = (parse.into_iter())
-                    .map(|(head, label)| Relation {
-                        head,
-                        deprel: &self.model.relations[label],
-                        label,
+                    .map(|link| Relation {
+                        head: link.head,
+                        deprel: &self.model.relations[link.label],
+                        label: link.label,
+                        head_prob: link.head_prob,
+                        deprel_prob: link.label_prob,
                     })
                     .collect();
             }
@@ -329,8 +342,23 @@ mod tests {
                         .iter()
                         .all(|r| (r.head == 0) == (r.deprel == "root"))
                 );
+                // Вероятности от 0 до 1, у корня связь root - 1
+                assert!(relations.iter().all(|r| {
+                    r.head_prob > 0.0
+                        && r.head_prob <= 1.0
+                        && r.deprel_prob > 0.0
+                        && r.deprel_prob <= 1.0
+                        && (r.head != 0 || r.deprel_prob == 1.0)
+                }));
             }
         }
+    }
+
+    #[test]
+    fn checksum_is_crc_of_body() {
+        let data = model(1, 5, false);
+        let parser = Parser::from_bytes(&data).unwrap();
+        assert_eq!(parser.checksum(), crc32fast::hash(&data[format::HEADER..]));
     }
 
     #[test]

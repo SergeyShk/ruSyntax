@@ -26,8 +26,9 @@ fn finite(value: f32) -> f32 {
     }
 }
 
-/// Вершины позиций `0..n` (0 - корень, его вершина - 0) по оценке `score(зависимое, вершина)`
-pub(crate) fn heads(n: usize, score: &impl Fn(usize, usize) -> f32) -> Vec<usize> {
+/// Вершины позиций `0..n` (0 - корень, его вершина - 0) по оценке `score(зависимое, вершина)` и вероятность
+/// каждой вершины - softmax оценок кандидатов в вершины слова, как у обучения (у позиции корня - 1)
+pub(crate) fn heads(n: usize, score: &impl Fn(usize, usize) -> f32) -> (Vec<usize>, Vec<f32>) {
     if n > FULL + 1 {
         return long(n, score);
     }
@@ -49,26 +50,47 @@ pub(crate) fn heads(n: usize, score: &impl Fn(usize, usize) -> f32) -> Vec<usize
         })
         .collect();
     heads[0] = 0;
-    if roots(&heads) == 1 && cycle(&heads).is_none() {
-        return heads;
-    }
-    // Логарифмы вероятностей вершин по строке, как у обучения
-    let mut logp = vec![vec![f64::NEG_INFINITY; n]; n];
-    for d in 1..n {
-        let row = &s[d * n..(d + 1) * n];
-        let max = row.iter().copied().fold(f32::NEG_INFINITY, f32::max) as f64;
-        let sum: f64 = row.iter().map(|&x| (x as f64 - max).exp()).sum();
-        let log_sum = max + sum.ln();
-        for h in 0..n {
-            if h != d {
-                logp[d][h] = row[h] as f64 - log_sum;
+    let log_sums: Vec<f64> = (0..n)
+        .map(|d| {
+            if d == 0 {
+                0.0
+            } else {
+                log_sum(&s[d * n..(d + 1) * n])
+            }
+        })
+        .collect();
+    if roots(&heads) != 1 || cycle(&heads).is_some() {
+        // Логарифмы вероятностей вершин по строке
+        let mut logp = vec![vec![f64::NEG_INFINITY; n]; n];
+        for d in 1..n {
+            for h in 0..n {
+                if h != d {
+                    logp[d][h] = s[d * n + h] as f64 - log_sums[d];
+                }
             }
         }
+        heads = one_root(&logp).unwrap_or_else(|| {
+            let root_score: Vec<f32> = (0..n).map(|d| s[d * n]).collect();
+            repair(heads, &root_score)
+        });
     }
-    one_root(&logp).unwrap_or_else(|| {
-        let root_score: Vec<f32> = (0..n).map(|d| s[d * n]).collect();
-        repair(heads, &root_score)
-    })
+    let probs = (0..n)
+        .map(|d| {
+            if d == 0 {
+                1.0
+            } else {
+                (s[d * n + heads[d]] as f64 - log_sums[d]).exp() as f32
+            }
+        })
+        .collect();
+    (heads, probs)
+}
+
+/// Логарифм суммы экспонент оценок
+fn log_sum(row: &[f32]) -> f64 {
+    let max = row.iter().copied().fold(f32::NEG_INFINITY, f32::max) as f64;
+    let sum: f64 = row.iter().map(|&x| (x as f64 - max).exp()).sum();
+    max + sum.ln()
 }
 
 fn argmax(row: &[f32]) -> usize {
@@ -212,18 +234,23 @@ fn max_pair(best: (usize, f64), next: (usize, f64)) -> (usize, f64) {
     if next.1 > best.1 { next } else { best }
 }
 
-/// Длинное предложение: лучшие вершины среди корня и `WINDOW` слов с каждой стороны, затем `repair`
-fn long(n: usize, score: &impl Fn(usize, usize) -> f32) -> Vec<usize> {
+/// Длинное предложение: лучшие вершины среди корня и `WINDOW` слов с каждой стороны, затем `repair`;
+/// вероятность вершины - среди тех же кандидатов
+fn long(n: usize, score: &impl Fn(usize, usize) -> f32) -> (Vec<usize>, Vec<f32>) {
     let mut heads = vec![0usize; n];
     let mut root_score = vec![f32::MIN; n];
+    let mut log_sums = vec![0.0f64; n];
+    let mut values = Vec::with_capacity(2 * WINDOW + 1);
     for d in 1..n {
         let mut best = (0, f32::NEG_INFINITY);
         let window = d.saturating_sub(WINDOW).max(1)..=(d + WINDOW).min(n - 1);
+        values.clear();
         for h in std::iter::once(0).chain(window) {
             if h == d {
                 continue;
             }
             let value = finite(score(d, h));
+            values.push(value);
             if h == 0 {
                 root_score[d] = value;
             }
@@ -232,8 +259,26 @@ fn long(n: usize, score: &impl Fn(usize, usize) -> f32) -> Vec<usize> {
             }
         }
         heads[d] = best.0;
+        log_sums[d] = log_sum(&values);
     }
-    repair(heads, &root_score)
+    let heads = repair(heads, &root_score);
+    let probs = (0..n)
+        .map(|d| {
+            if d == 0 {
+                return 1.0;
+            }
+            let value = finite(score(d, heads[d])) as f64;
+            // Вершину за окном назначила починка: она - еще один кандидат
+            let log_sum = if heads[d] == 0 || heads[d].abs_diff(d) <= WINDOW {
+                log_sums[d]
+            } else {
+                let max = log_sums[d].max(value);
+                max + ((log_sums[d] - max).exp() + (value - max).exp()).ln()
+            };
+            (value - log_sum).exp() as f32
+        })
+        .collect();
+    (heads, probs)
 }
 
 /// Дерево из лучших вершин: из кандидатов в корень (или из всех слов, если их нет) остается один
@@ -322,13 +367,15 @@ mod tests {
     #[test]
     fn edmonds_with_one_root_matches_brute_force() {
         let mut rng = Rng(0x9e37_79b9_7f4a_7c15);
-        for trial in 0..400 {
+        for trial in 0..2000 {
             let n = 2 + trial % 6;
+            // В половине графов у лучших вершин несколько детей корня: перебираются кандидаты
+            let root_bias = if trial % 2 == 0 { 3.0 } else { 0.0 };
             let mut s = vec![vec![f64::NEG_INFINITY; n]; n];
             for (d, row) in s.iter_mut().enumerate().skip(1) {
                 for (h, value) in row.iter_mut().enumerate() {
                     if h != d {
-                        *value = f64::from(rng.next());
+                        *value = f64::from(rng.next()) + if h == 0 { root_bias } else { 0.0 };
                     }
                 }
             }
@@ -340,26 +387,51 @@ mod tests {
     }
 
     #[test]
+    fn head_probabilities_are_softmax_of_rows() {
+        let mut rng = Rng(11);
+        for n in [2, 7, 30, FULL + 40] {
+            let values: Vec<f32> = (0..n * n.min(200)).map(|_| rng.next()).collect();
+            let score =
+                |d: usize, h: usize| values[(d * n.min(200) + h % n.min(200)) % values.len()];
+            let (tree, probs) = heads(n, &score);
+            assert_eq!(probs[0], 1.0);
+            for d in 1..n {
+                let p = probs[d];
+                assert!(p > 0.0 && p <= 1.0, "{d}: {p}");
+                if n <= FULL {
+                    let row: Vec<f32> = (0..n).filter(|&h| h != d).map(|h| score(d, h)).collect();
+                    let sum: f64 = row.iter().map(|&x| f64::from(x).exp()).sum();
+                    let expected = f64::from(score(d, tree[d])).exp() / sum;
+                    assert!(
+                        (f64::from(p) - expected).abs() < 1e-5,
+                        "{d}: {p} {expected}"
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
     fn heads_always_form_tree() {
         let mut rng = Rng(7);
         for n in 2..40 {
             let values: Vec<f32> = (0..n * n).map(|_| rng.next()).collect();
             let score = |d: usize, h: usize| values[d * n + h];
-            assert!(is_tree(&heads(n, &score)));
-            assert!(is_tree(&long(n, &score)));
+            assert!(is_tree(&heads(n, &score).0));
+            assert!(is_tree(&long(n, &score).0));
         }
     }
 
     #[test]
     fn nan_and_infinite_scores_give_tree() {
+        // Дерево и вероятности от 0 до 1
+        let check = |(tree, probs): (Vec<usize>, Vec<f32>)| {
+            is_tree(&tree) && probs.iter().all(|p| (0.0..=1.0).contains(p))
+        };
         for bad in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
-            assert!(is_tree(&heads(5, &|_, _| bad)));
-            assert!(is_tree(&heads(5, &|d, h| if h == 0 {
-                bad
-            } else {
-                d as f32
-            })));
-            assert!(is_tree(&long(5, &|_, _| bad)));
+            assert!(check(heads(5, &|_, _| bad)));
+            assert!(check(heads(5, &|d, h| if h == 0 { bad } else { d as f32 })));
+            assert!(check(long(5, &|_, _| bad)));
         }
     }
 
@@ -376,7 +448,7 @@ mod tests {
         };
         let tree = std::thread::Builder::new()
             .stack_size(128 * 1024)
-            .spawn(move || heads(n, &score))
+            .spawn(move || heads(n, &score).0)
             .and_then(|thread| {
                 thread
                     .join()
@@ -434,7 +506,11 @@ mod tests {
     fn argmax_tree_is_kept() {
         // Каждое слово лучше всего цепляется к предыдущему: это уже дерево
         let score = |d: usize, h: usize| if h + 1 == d { 5.0 } else { 0.0 };
-        assert_eq!(heads(5, &score), [0, 0, 1, 2, 3]);
+        let (tree, probs) = heads(5, &score);
+        assert_eq!(tree, [0, 0, 1, 2, 3]);
+        // У слова 2: e⁵ у вершины 1 и e⁰ у трех других кандидатов
+        let e5 = 5f32.exp();
+        assert!((probs[2] - e5 / (e5 + 3.0)).abs() < 1e-6);
     }
 
     #[test]
@@ -452,7 +528,7 @@ mod tests {
             1 => 5.0,
             _ => -(d.abs_diff(h) as f32),
         };
-        let tree = heads(n, &score);
+        let tree = heads(n, &score).0;
         assert!(is_tree(&tree));
         assert!((2..=WINDOW + 1).all(|d| tree[d] == 1));
         assert!((WINDOW + 2..n).all(|d| tree[d].abs_diff(d) == 1));
@@ -467,7 +543,7 @@ mod tests {
             (_, 0) => 1.0 + d as f32 / n as f32,
             _ => 0.0,
         };
-        let tree = heads(n, &score);
+        let tree = heads(n, &score).0;
         assert!(is_tree(&tree));
         assert_eq!(tree[n - 1], 0);
     }
