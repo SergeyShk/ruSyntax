@@ -188,6 +188,13 @@ impl<'a> Entries<'a> {
     }
 }
 
+/// Контрольная сумма из заголовка файла, уже проверенного `read`
+pub(crate) fn checksum(data: &[u8]) -> u32 {
+    (data.get(MAGIC.len() + 4..HEADER))
+        .and_then(|bytes| bytes.try_into().ok())
+        .map_or(0, u32::from_le_bytes)
+}
+
 /// Записи файла: проверяются сигнатура, версия формата, контрольная сумма и границы записей
 pub(crate) fn read(data: &[u8]) -> Result<Entries<'_>, Error> {
     if data.get(..MAGIC.len()) != Some(MAGIC.as_slice()) {

@@ -4,6 +4,7 @@ import re
 import shutil
 import threading
 import weakref
+import zlib
 from pathlib import Path
 
 import pytest
@@ -96,6 +97,24 @@ def test_long_sentence(parser):
 def test_parse_accepts_tuples_and_generators(parser):
     expected = parser.parse(WORDS, UPOS, FEATS)
     assert parser.parse(tuple(WORDS), (u for u in UPOS), FEATS) == expected
+
+
+def test_parse_probs(parser):
+    plain = parser.parse(WORDS, UPOS, FEATS)
+    scored = parser.parse(WORDS, UPOS, FEATS, probs=True)
+    assert [(head, deprel) for head, deprel, _, _ in scored] == plain
+    for head, _, head_prob, deprel_prob in scored:
+        assert isinstance(head_prob, float) and isinstance(deprel_prob, float)
+        assert 0 < head_prob <= 1 and 0 < deprel_prob <= 1
+        # У корня связь root - по правилу
+        assert head != 0 or deprel_prob == 1
+    assert parser.parse_many([(WORDS, UPOS, FEATS)] * 2, probs=True) == [scored, scored]
+    assert parser.parse([], [], [], probs=True) == []
+    # Сомнительная вершина: «с биноклем» - к «видел» или к «девочку»
+    words = ["Я", "видел", "девочку", "с", "биноклем"]
+    upos = ["PRON", "VERB", "NOUN", "ADP", "NOUN"]
+    feats = ["Case=Nom", "Tense=Past", "Case=Acc", None, "Case=Ins"]
+    assert parser.parse(words, upos, feats, probs=True)[4][2] < 0.9
 
 
 def test_parse_many_matches_parse(parser):
@@ -307,6 +326,38 @@ def test_parse_text(parser):
         parser.parse_text(b"text")
 
 
+def test_parse_text_with_own_tools(parser):
+    text = "Звонил прапорщ. Петров."
+    assert len(parser.parse_text(text).sentences) == 2
+    segmenter = Segmenter("ru", abbreviations=["прапорщ."])
+    document = parser.parse_text(text, segmenter=segmenter)
+    assert len(document.sentences) == 1
+    assert [word.head for word in document.words].count(0) == 1
+
+    class Recording:
+        # Анализатор с тем же annotate: parse_text зовет именно его
+        def __init__(self):
+            self.calls, self.analyzer = 0, Analyzer()
+
+        def annotate(self, document):
+            self.calls += 1
+            self.analyzer.annotate(document)
+
+    analyzer = Recording()
+    assert parser.parse_text(text, analyzer=analyzer).words[0].upos == "VERB"
+    assert analyzer.calls == 1
+    parser.parse_text(text, segmenter=segmenter, analyzer=analyzer)
+    assert analyzer.calls == 2
+    with pytest.raises(
+        TypeError, match=r"segmenter: ожидается сегментатор anySeg .*, а не Analyzer"
+    ):
+        parser.parse_text(text, segmenter=Analyzer())
+    with pytest.raises(
+        TypeError, match=r"analyzer: ожидается анализатор ruMorph .*, а не Segmenter"
+    ):
+        parser.parse_text(text, analyzer=segmenter)
+
+
 def test_model_from_path(tmp_path, parser):
     custom = Parser(MODEL)
     assert custom.path == MODEL
@@ -372,6 +423,8 @@ def test_sources(parser):
     assert sources["ud"] == "r2.19"
     assert set(sources["treebanks"]) == {"UD_Russian-Taiga", "UD_Russian-GSD", "UD_Russian-Poetry"}
     assert sources["tags"].startswith("rumorph ")
+    # Контрольная сумма - CRC32 файла после заголовка из 16 байт
+    assert sources["crc32"] == f"{zlib.crc32(MODEL.read_bytes()[16:]):08x}"
 
 
 def test_equality_and_weakref(tmp_path, parser):
