@@ -4,9 +4,6 @@
 
 **ruSyntax** - синтаксический анализатор русского языка: ядро на Rust и API для Python. Для каждого слова предложения анализатор находит вершину и тип синтаксической связи в разметке [Universal Dependencies](https://universaldependencies.org/). Текст делит на предложения и слова сегментатор [anySeg](https://github.com/SergeyShk/anySeg), части речи и признаки ставит морфологический анализатор [ruMorph](https://github.com/SergeyShk/ruMorph).
 
-!!! warning "Проект в разработке"
-    До версии 0.1.0 API может меняться. Версии `0.1.0.devN` публикуются на TestPyPI.
-
 === "Код"
 
     ``` python

@@ -15,7 +15,16 @@
   запись CoNLL-U; у `Relation` - вершина, тип связи и его номер в `Parser::relations`.
 - Предложения близкой длины разбираются по четыре сразу: `Parser::parse_many`.
 
-Проект в разработке. Модель - файл [`data/ru-syntax.bin`](https://github.com/SergeyShk/ruSyntax/blob/master/data/ru-syntax.bin) репозитория (CC BY-SA 4.0, [LICENSE-MODEL.txt](https://github.com/SergeyShk/ruSyntax/blob/master/LICENSE-MODEL.txt)): в крейт она не входит, анализатор читает ее из файла.
+## Установка
+
+```toml
+[dependencies]
+rusyntax = "0.1"
+```
+
+Модель в крейт не входит: анализатор читает ее из файла. Модель версии 0.1 - файл
+[`data/ru-syntax.bin`](https://github.com/SergeyShk/ruSyntax/raw/0.1.0/data/ru-syntax.bin) репозитория на теге 0.1.0
+(CC BY-SA 4.0, [LICENSE-MODEL.txt](https://github.com/SergeyShk/ruSyntax/blob/0.1.0/LICENSE-MODEL.txt)).
 
 ## Пример
 

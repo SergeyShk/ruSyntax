@@ -10,10 +10,15 @@
 
 <p align="center">
   <a href="https://sergeyshk.github.io/ruSyntax/">Документация</a> ·
+  <a href="https://pypi.org/project/rusyntax/">PyPI</a> ·
+  <a href="https://crates.io/crates/rusyntax">crates.io</a> ·
   <a href="https://github.com/SergeyShk/ruSyntax/blob/master/README.en.md">English</a>
 </p>
 
 <p align="center">
+  <a href="https://pypi.org/project/rusyntax/"><img src="https://img.shields.io/pypi/v/rusyntax?logo=pypi&logoColor=FFE873" alt="Версия"></a>
+  <a href="https://pypi.org/project/rusyntax/"><img src="https://img.shields.io/pypi/pyversions/rusyntax.svg?logo=python&logoColor=FFE873" alt="Поддерживаемые версии Python"></a>
+  <a href="https://crates.io/crates/rusyntax"><img src="https://img.shields.io/crates/v/rusyntax?logo=rust" alt="Крейт"></a>
   <a href="https://github.com/SergeyShk/ruSyntax/actions/workflows/ci.yml"><img src="https://github.com/SergeyShk/ruSyntax/actions/workflows/ci.yml/badge.svg" alt="Сборка"></a>
   <a href="https://github.com/astral-sh/ruff"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json" alt="Ruff"></a>
   <a href="https://github.com/SergeyShk/ruSyntax/blob/master/LICENSE.txt"><img src="https://img.shields.io/github/license/sergeyshk/rusyntax.svg" alt="Лицензия"></a>
@@ -22,9 +27,6 @@
 ---
 
 **ruSyntax** - синтаксический анализатор русского языка: ядро на Rust и API для Python. Для каждого слова предложения анализатор находит вершину и тип синтаксической связи в разметке [Universal Dependencies](https://universaldependencies.org/).
-
-> [!WARNING]
-> Проект в разработке: до версии 0.1.0 API может меняться. Версии `0.1.0.devN` публикуются на TestPyPI.
 
 ## Установка
 

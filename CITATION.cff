@@ -6,7 +6,10 @@ authors:
   - family-names: Shkarin
     given-names: Sergey
     email: kouki.sergey@gmail.com
+version: 0.1.0
+date-released: 2026-11-19
 repository-code: "https://github.com/SergeyShk/ruSyntax"
+url: "https://sergeyshk.github.io/ruSyntax/"
 license: MIT
 keywords:
   - russian
@@ -15,4 +18,4 @@ keywords:
   - dependency parsing
   - universal dependencies
   - rust
-abstract: "ruSyntax is a dependency parser of Russian with a Rust core and a Python API: for every word of a sentence it finds the head and the Universal Dependencies relation. Work in progress."
+abstract: "ruSyntax is a dependency parser of Russian with a Rust core and a Python API: for every word of a sentence it finds the head and the Universal Dependencies relation. A BiLSTM over the words, their endings and the ruMorph parts of speech and features scores the arcs with a biaffine scorer and builds the maximum spanning tree with one root, non-projective trees included; the relations are chosen by the pair of the dependent and its head. The model is trained on the Taiga, GSD and Poetry treebanks of UD 2.19, and its int8 weights are distributed under CC BY-SA 4.0. Raw text is split into sentences and words by the anySeg segmenter and tagged by the ruMorph morphological analyzer; sentences are parsed without the GIL."

@@ -10,10 +10,16 @@ pip install rusyntax
 
 На PyPI публикуются колеса для Linux (x86_64 и aarch64, manylinux и musllinux), macOS (Intel и Apple Silicon) и Windows (x64 и arm64). Одно колесо подходит для всех версий Python начиная с 3.11, отдельные колеса собираются для Python 3.14t и 3.15t без GIL; Rust для установки не нужен. Python 3.13t без GIL не поддерживается.
 
-Предварительные версии `0.1.0.devN` публикуются только на TestPyPI:
+Предварительные версии `X.Y.Z.devN` публикуются только на TestPyPI:
 
 ``` bash
-pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ "rusyntax>=0.1.0.dev0"
+pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ --pre rusyntax
+```
+
+uv берет пакет из первого индекса, где он есть, поэтому ему нужен другой порядок индексов:
+
+``` bash
+uv pip install --extra-index-url https://test.pypi.org/simple/ --index-strategy unsafe-best-match --pre rusyntax
 ```
 
 ## Сборка из исходников
@@ -26,3 +32,11 @@ pip install rusyntax
 ```
 
 Окружение для разработки описано в [CONTRIBUTING.md](https://github.com/SergeyShk/ruSyntax/blob/master/CONTRIBUTING.md).
+
+## Rust { #rust }
+
+Ядро анализатора публикуется на crates.io крейтом [`rusyntax`](https://crates.io/crates/rusyntax), документация API - на [docs.rs](https://docs.rs/rusyntax). Модель в крейт не входит: `Parser::from_path` читает файл `data/ru-syntax.bin` из репозитория на теге той же версии, что и крейт (лицензия модели - CC BY-SA 4.0).
+
+``` bash
+cargo add rusyntax
+```
