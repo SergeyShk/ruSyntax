@@ -22,6 +22,7 @@
   <a href="https://github.com/SergeyShk/ruSyntax/actions/workflows/ci.yml"><img src="https://github.com/SergeyShk/ruSyntax/actions/workflows/ci.yml/badge.svg" alt="Сборка"></a>
   <a href="https://github.com/astral-sh/ruff"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json" alt="Ruff"></a>
   <a href="https://github.com/SergeyShk/ruSyntax/blob/master/LICENSE.txt"><img src="https://img.shields.io/github/license/sergeyshk/rusyntax.svg" alt="Лицензия"></a>
+  <a href="https://doi.org/10.5281/zenodo.24384006"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.24384006.svg" alt="DOI"></a>
 </p>
 
 ---
@@ -120,3 +121,17 @@ uv run pre-commit install
 ## Лицензия
 
 Код распространяется под лицензией [MIT](https://github.com/SergeyShk/ruSyntax/blob/master/LICENSE.txt). Модель обучена на трибанках [UD_Russian-Taiga](https://github.com/UniversalDependencies/UD_Russian-Taiga), [UD_Russian-GSD](https://github.com/UniversalDependencies/UD_Russian-GSD) и [UD_Russian-Poetry](https://github.com/UniversalDependencies/UD_Russian-Poetry) и распространяется по лицензии CC BY-SA 4.0 ([LICENSE-MODEL.txt](https://github.com/SergeyShk/ruSyntax/blob/master/LICENSE-MODEL.txt)).
+
+## Цитирование
+
+Если вы используете **ruSyntax** в исследованиях или программах, пожалуйста, цитируйте библиотеку по следующей записи BibTeX - это помогает развитию и поддержке проекта. Те же метаданные лежат в [CITATION.cff](https://github.com/SergeyShk/ruSyntax/blob/master/CITATION.cff) - GitHub показывает их по кнопке «Cite this repository». Concept DOI [10.5281/zenodo.24384006](https://doi.org/10.5281/zenodo.24384006) на Zenodo указывает на все версии библиотеки; DOI конкретной версии - на странице релиза.
+
+```bibtex
+@software{ruSyntax,
+  author = {Sergey Shkarin},
+  title = {{ruSyntax, a fast dependency parser for Russian}},
+  year = 2026,
+  doi = {10.5281/zenodo.24384006},
+  url = {https://github.com/SergeyShk/ruSyntax}
+}
+```

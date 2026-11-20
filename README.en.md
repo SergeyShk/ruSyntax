@@ -22,6 +22,7 @@
   <a href="https://github.com/SergeyShk/ruSyntax/actions/workflows/ci.yml"><img src="https://github.com/SergeyShk/ruSyntax/actions/workflows/ci.yml/badge.svg" alt="Build"></a>
   <a href="https://github.com/astral-sh/ruff"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json" alt="Ruff"></a>
   <a href="https://github.com/SergeyShk/ruSyntax/blob/master/LICENSE.txt"><img src="https://img.shields.io/github/license/sergeyshk/rusyntax.svg" alt="License"></a>
+  <a href="https://doi.org/10.5281/zenodo.24384006"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.24384006.svg" alt="DOI"></a>
 </p>
 
 ---
@@ -120,3 +121,17 @@ Bug reports, ideas and pull requests are welcome - the [issues](https://github.c
 ## License
 
 The code is distributed under the [MIT](https://github.com/SergeyShk/ruSyntax/blob/master/LICENSE.txt) license. The model is trained on the treebanks [UD_Russian-Taiga](https://github.com/UniversalDependencies/UD_Russian-Taiga), [UD_Russian-GSD](https://github.com/UniversalDependencies/UD_Russian-GSD) and [UD_Russian-Poetry](https://github.com/UniversalDependencies/UD_Russian-Poetry) and is distributed under the CC BY-SA 4.0 license ([LICENSE-MODEL.txt](https://github.com/SergeyShk/ruSyntax/blob/master/LICENSE-MODEL.txt)).
+
+## Citation
+
+If you use **ruSyntax** in research or software, please cite it with the following BibTeX entry - citations help the development and support of the project. The same metadata is in [CITATION.cff](https://github.com/SergeyShk/ruSyntax/blob/master/CITATION.cff), which GitHub shows under the "Cite this repository" button. The Zenodo concept DOI [10.5281/zenodo.24384006](https://doi.org/10.5281/zenodo.24384006) resolves to all versions of the library; the DOI of a specific version is on its release page.
+
+```bibtex
+@software{ruSyntax,
+  author = {Sergey Shkarin},
+  title = {{ruSyntax, a fast dependency parser for Russian}},
+  year = 2026,
+  doi = {10.5281/zenodo.24384006},
+  url = {https://github.com/SergeyShk/ruSyntax}
+}
+```
