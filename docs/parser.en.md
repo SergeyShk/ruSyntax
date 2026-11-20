@@ -45,19 +45,25 @@ Read-only properties:
 | :------- | :--- | :---------- |
 | `path` | `Path` / `None` | The absolute path to the model file; `None` for the package model |
 | `relations` | `list[str]` | The relations of the model with subtypes: `nsubj`, `obl:tmod`, `root` and others |
-| `sources` | `dict` / `None` | How the model was trained: the UD release, the treebanks and their commits, the ruMorph version, LAS on dev |
+| `sources` | `dict` | About the model: the checksum `crc32` (the CRC32 of the model file after its header, which tells one model from another) and how the model was trained - the UD release, the treebanks and their commits, the ruMorph version, LAS on dev |
 
 ## Methods
 
 ### Parsing a text { #parse_text }
 
 ``` {.python .signature}
-parse_text(text)
+parse_text(text, *, segmenter=None, analyzer=None)
 ```
 
-Splits the text into sentences and words with the [anySeg](https://github.com/SergeyShk/anySeg) segmenter, gives the words the lemma, part of speech and features of the [ruMorph](https://github.com/SergeyShk/ruMorph) morphological analyzer in context and finds the head and relation of every word. Returns an anySeg document (`anyseg.Document`) with the columns `lemma`, `upos`, `feats`, `head` and `deprel`: its words, sentences and CoNLL-U output are described in the [anySeg documentation](https://sergeyshk.github.io/anySeg/document/). The segmenter and analyzer are created on the first call and reused afterwards. The parser does not change the sentence boundaries of anySeg.
+Splits the text into sentences and words with the [anySeg](https://github.com/SergeyShk/anySeg) segmenter, gives the words the lemma, part of speech and features of the [ruMorph](https://github.com/SergeyShk/ruMorph) morphological analyzer in context and finds the head and relation of every word. Returns an anySeg document (`anyseg.Document`) with the columns `lemma`, `upos`, `feats`, `head` and `deprel`: its words, sentences and CoNLL-U output are described in the [anySeg documentation](https://sergeyshk.github.io/anySeg/document/). The default segmenter and analyzer are created on the first call and reused afterwards; your own - a segmenter with your abbreviations or an analyzer with your words, for example - are passed as parameters. The parser does not change the sentence boundaries of anySeg.
 
-Exceptions: `TypeError` - the text is not a string.
+| Parameter | Type | Default | Description |
+| :-------- | :--- | :------ | :---------- |
+| `text` | `str` | | The text |
+| `segmenter` | `anyseg.Segmenter` | `None` | A segmenter or an object with the `segment` method; by default `Segmenter("ru")` |
+| `analyzer` | `rumorph.Analyzer` | `None` | A morphological analyzer or an object with the `annotate` method; by default `Analyzer()` |
+
+Exceptions: `TypeError` - the text is not a string, the segmenter has no `segment` method or the analyzer has no `annotate` method.
 
 === "Code"
 
@@ -77,6 +83,24 @@ Exceptions: `TypeError` - the text is not a string.
     2	стали	стать	VERB	_	Aspect=Perf|Mood=Ind|Number=Plur|Tense=Past|VerbForm=Fin|Voice=Act	0	root	_	_
     3	друзьями	друг	NOUN	_	Animacy=Anim|Case=Ins|Gender=Masc|Number=Plur	2	xcomp	_	SpaceAfter=No
     4	.	.	PUNCT	_	_	2	punct	_	_
+    ```
+
+An abbreviation the segmenter does not know splits the sentence; your own segmenter knows it:
+
+=== "Code"
+
+    ``` python
+    from anyseg import Segmenter
+
+    segmenter = Segmenter("ru", abbreviations=["прапорщ."])
+    document = parser.parse_text("Звонил прапорщ. Петров.", segmenter=segmenter)
+    [(word.form, word.head, word.deprel) for word in document.words]
+    ```
+
+=== "Result"
+
+    ```
+    [('Звонил', 0, 'root'), ('прапорщ.', 1, 'nsubj'), ('Петров', 2, 'flat:name'), ('.', 1, 'punct')]
     ```
 
 ### Parsing a document { #annotate }
@@ -113,7 +137,7 @@ Exceptions:
 ### Parsing a sentence { #parse }
 
 ``` {.python .signature}
-parse(words, upos, feats)
+parse(words, upos, feats, *, probs=False)
 ```
 
 The head and relation of every word of the sentence in the same order; an empty sentence gives an empty list. The words come with their part of speech and features in the UD annotation - as ruMorph gives them. The part of speech is one of the 17 UD parts of speech in capitals (`NOUN`, `VERB`, `X`): with other tags, lowercase or OpenCorpora ones for example, the model would parse almost at random, so they are an error. The features are a CoNLL-U field (`Case=Nom|Number=Sing`) or a dictionary, like `feats` of a ruMorph analysis; `_`, an empty string, an empty dictionary or `None` mean no features. Features unknown to the model are skipped. Parsing runs without the GIL.
@@ -123,6 +147,7 @@ The head and relation of every word of the sentence in the same order; an empty 
 | `words` | `Iterable[str]` | The word forms |
 | `upos` | `Iterable[str]` | The UD parts of speech |
 | `feats` | `Iterable[str \| Mapping[str, str] \| None]` | The UD features of every word |
+| `probs` | `bool` | Add the [probabilities](#probs) of the head and the relation: quadruples instead of pairs |
 
 Exceptions:
 
@@ -166,10 +191,10 @@ If the text is already split into words, ruMorph gives them the morphology in co
 ### Parsing many sentences { #parse_many }
 
 ``` {.python .signature}
-parse_many(sentences)
+parse_many(sentences, *, probs=False)
 ```
 
-The same as `parse` for every sentence, but faster: sentences of close lengths are parsed four at a time. A sentence is a triple (forms, parts of speech, features). Parsing runs without the GIL in chunks of 256 sentences; Ctrl+C works between them.
+The same as `parse` for every sentence, but faster: sentences of close lengths are parsed four at a time. A sentence is a triple (forms, parts of speech, features); `probs=True` adds the [probabilities](#probs), as in `parse`. Parsing runs without the GIL in chunks of 256 sentences; Ctrl+C works between them.
 
 Exceptions: `ValueError` - a sentence is not three collections, their lengths differ, or a part of speech is not one of the 17 UD parts of speech; `TypeError` - the input is not a collection of strings.
 
@@ -188,6 +213,28 @@ Exceptions: `ValueError` - a sentence is not three collections, their lengths di
 
     ```
     [[(0, 'root'), (1, 'punct')], [(0, 'root'), (1, 'nsubj')]]
+    ```
+
+## Probabilities { #probs }
+
+With `probs=True` every word has, besides its head and relation, two probabilities from the model: `head_prob` of the head among all the words of the sentence and the root, and `deprel_prob` of the relation given this head; the `root` relation of the root is set by the rule, and its probability is 1. Their product is the probability that the relation is right as a whole. The probabilities tell reliable relations from doubtful ones: on dev Taiga, GSD and SynTagRus the head is right for 97-99 % of the words with `head_prob` from 0.99 (52-69 % of the words), and for about 40 % below 0.5 (2-7 % of the words). The probabilities are local - per word, not per tree - and slightly high: the mean `head_prob` is 2-5 points above the share of right heads.
+
+=== "Code"
+
+    ``` python
+    words = ["Я", "видел", "девочку", "с", "биноклем", "."]
+    best = [analyses[0] for analyses in Analyzer().analyze_sentence(words)]
+    relations = parser.parse(words, [a.pos for a in best], [a.feats for a in best], probs=True)
+    [
+        (word, head, deprel, round(p, 2), round(q, 2))
+        for word, (head, deprel, p, q) in zip(words, relations)
+    ]
+    ```
+
+=== "Result"
+
+    ```
+    [('Я', 2, 'nsubj', 1.0, 1.0), ('видел', 0, 'root', 1.0, 1.0), ('девочку', 2, 'obj', 1.0, 1.0), ('с', 5, 'case', 1.0, 1.0), ('биноклем', 2, 'obl', 0.54, 1.0), ('.', 2, 'punct', 1.0, 1.0)]
     ```
 
 ## The parse tree { #tree }
