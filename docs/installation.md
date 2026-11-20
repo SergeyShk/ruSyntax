@@ -35,7 +35,7 @@ pip install rusyntax
 
 ## Rust { #rust }
 
-Ядро анализатора публикуется на crates.io крейтом [`rusyntax`](https://crates.io/crates/rusyntax), документация API - на [docs.rs](https://docs.rs/rusyntax). Модель в крейт не входит: `Parser::from_path` читает файл `data/ru-syntax.bin` из репозитория на теге той же версии, что и крейт (лицензия модели - CC BY-SA 4.0).
+Ядро анализатора публикуется на crates.io крейтом [`rusyntax`](https://crates.io/crates/rusyntax), документация API - на [docs.rs](https://docs.rs/rusyntax). Модель в крейт не входит: файл [`data/ru-syntax.bin`](https://github.com/SergeyShk/ruSyntax/raw/0.1.0/data/ru-syntax.bin) репозитория на теге той же версии, что и крейт (лицензия модели - CC BY-SA 4.0), нужно скачать и передать путь к нему в `Parser::from_path`.
 
 ``` bash
 cargo add rusyntax
