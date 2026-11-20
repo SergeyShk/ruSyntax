@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "rusyntax"
-version = "0.1.0"
+version = "0.2.0.dev1"
 description = "Fast Russian dependency parser written in Rust with a Python API"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -39,6 +39,9 @@ classifiers = [
     "Natural Language :: Russian",
 ]
 dependencies = ["anyseg>=0.3.1,<0.5", "rumorph>=0.6,<0.7"]
+
+[project.scripts]
+rusyntax = "rusyntax.__main__:main"
 
 [project.urls]
 Homepage = "https://github.com/SergeyShk/ruSyntax"
@@ -122,6 +125,8 @@ combine-as-imports = true
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["N801", "N802"]
+# Пути команды - строки как заданы: pathlib сокращает «./x» и делает из пустого пути «.»
+"python/rusyntax/__main__.py" = ["PTH"]
 
 [tool.mypy]
 python_version = "3.11"

@@ -22,6 +22,7 @@
   <a href="https://github.com/SergeyShk/ruSyntax/actions/workflows/ci.yml"><img src="https://github.com/SergeyShk/ruSyntax/actions/workflows/ci.yml/badge.svg" alt="Сборка"></a>
   <a href="https://github.com/astral-sh/ruff"><img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json" alt="Ruff"></a>
   <a href="https://github.com/SergeyShk/ruSyntax/blob/master/LICENSE.txt"><img src="https://img.shields.io/github/license/sergeyshk/rusyntax.svg" alt="Лицензия"></a>
+  <a href="https://doi.org/10.5281/zenodo.24384006"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.24384006.svg" alt="DOI"></a>
 </p>
 
 ---
@@ -50,6 +51,15 @@ print([(word.form, word.head, word.deprel) for word in document.words])
 ```
 
 `parse_text` делит текст на предложения и слова сегментатором [anySeg](https://github.com/SergeyShk/anySeg), ставит словам часть речи и признаки морфологическим анализатором [ruMorph](https://github.com/SergeyShk/ruMorph) и находит вершину (номер слова с 1, 0 - корень) и тип связи каждого слова. Документ anySeg, уже разобранный морфологически, разбирает `parser.annotate(document)`, предложение со своими частями речи и признаками - `parser.parse(words, upos, feats)`, много предложений сразу - `parser.parse_many(sentences)`.
+
+Команда `rusyntax` ставится вместе с пакетом и разбирает текст из файлов или стандартного ввода в [CoNLL-U](https://universaldependencies.org/format.html); на входе может быть и CoNLL-U со своими частями речи и признаками (`rusyntax -i conllu`):
+
+```bash
+echo "Мама мыла раму." | rusyntax
+rusyntax text.txt -o text.conllu
+```
+
+Параметры, вход и вывод команды - на странице [Команда rusyntax](https://sergeyshk.github.io/ruSyntax/cli/).
 
 ## Качество и скорость
 
@@ -96,7 +106,7 @@ uv run pre-commit install
 
 *   **crates/rusyntax** - ядро анализатора на Rust
 *   **crates/rusyntax-py** - модуль Python `rusyntax._rusyntax` на PyO3
-*   **python/rusyntax** - пакет Python
+*   **python/rusyntax** - пакет Python и команда `rusyntax`
 *   **docs** - документация MkDocs на русском и английском
 *   **tests** - тесты пакета Python
 *   **data** - модель и файл сверки ее прямого прохода на Rust с PyTorch
@@ -111,3 +121,17 @@ uv run pre-commit install
 ## Лицензия
 
 Код распространяется под лицензией [MIT](https://github.com/SergeyShk/ruSyntax/blob/master/LICENSE.txt). Модель обучена на трибанках [UD_Russian-Taiga](https://github.com/UniversalDependencies/UD_Russian-Taiga), [UD_Russian-GSD](https://github.com/UniversalDependencies/UD_Russian-GSD) и [UD_Russian-Poetry](https://github.com/UniversalDependencies/UD_Russian-Poetry) и распространяется по лицензии CC BY-SA 4.0 ([LICENSE-MODEL.txt](https://github.com/SergeyShk/ruSyntax/blob/master/LICENSE-MODEL.txt)).
+
+## Цитирование
+
+Если вы используете **ruSyntax** в исследованиях или программах, пожалуйста, цитируйте библиотеку по следующей записи BibTeX - это помогает развитию и поддержке проекта. Те же метаданные лежат в [CITATION.cff](https://github.com/SergeyShk/ruSyntax/blob/master/CITATION.cff) - GitHub показывает их по кнопке «Cite this repository». Concept DOI [10.5281/zenodo.24384006](https://doi.org/10.5281/zenodo.24384006) на Zenodo указывает на все версии библиотеки; DOI конкретной версии - на странице релиза.
+
+```bibtex
+@software{ruSyntax,
+  author = {Sergey Shkarin},
+  title = {{ruSyntax, a fast dependency parser for Russian}},
+  year = 2026,
+  doi = {10.5281/zenodo.24384006},
+  url = {https://github.com/SergeyShk/ruSyntax}
+}
+```

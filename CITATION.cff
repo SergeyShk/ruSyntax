@@ -11,6 +11,7 @@ date-released: 2026-11-19
 repository-code: "https://github.com/SergeyShk/ruSyntax"
 url: "https://sergeyshk.github.io/ruSyntax/"
 license: MIT
+doi: 10.5281/zenodo.24384006
 keywords:
   - russian
   - nlp
