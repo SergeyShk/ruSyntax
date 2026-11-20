@@ -26,7 +26,7 @@ A sentence goes through three steps: the anySeg segmenter splits the text into w
 
 ![How ruSyntax parses a sentence: the text, the words, the parts of speech and cases, the dependency tree](img/pipeline.en.svg)
 
-The methods of the parser are on the [Parser](parser.md) page, the architecture and training of the model on the [Model](model.md) page, quality and speed compared with other parsers on the [Comparison](performance.md) page.
+The methods of the parser are on the [Parser](parser.md) page, the architecture and training of the model on the [Model](model.md) page, quality and speed compared with other parsers on the [Comparison](performance.md) page. The [rusyntax command](cli.md) parses files and streams into CoNLL-U.
 
 ## Installation
 

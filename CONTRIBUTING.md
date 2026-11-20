@@ -49,7 +49,7 @@ make docs-build  # mkdocs build --strict, если менялась докуме
 
 - `crates/rusyntax/` - ядро анализатора на Rust; публикуется на crates.io.
 - `crates/rusyntax-py/` - модуль Python `rusyntax._rusyntax` на PyO3, отдельно не публикуется.
-- `python/rusyntax/` - пакет Python поверх модуля.
+- `python/rusyntax/` - пакет Python поверх модуля и команда `rusyntax`.
 - `tests/` - тесты пакета Python; `tests/test_docs.py` - два языка документации.
 - `docs/` - документация MkDocs (Material), `mkdocs.yml` - навигация и перевод ее на английский.
 - `scripts/` - выгрузка трибанков UD (`export_ud.py`) и обучение модели (`train.py`), сравнение с аналогами (`compare.py`), картинки документации (`figures.py`), проверка установленного пакета перед публикацией (`smoke.py`), лицензии крейтов модуля (`notices.py`). У скриптов с зависимостями версии закреплены рядом, в файлах `*.py.lock`.

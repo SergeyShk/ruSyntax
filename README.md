@@ -51,6 +51,15 @@ print([(word.form, word.head, word.deprel) for word in document.words])
 
 `parse_text` делит текст на предложения и слова сегментатором [anySeg](https://github.com/SergeyShk/anySeg), ставит словам часть речи и признаки морфологическим анализатором [ruMorph](https://github.com/SergeyShk/ruMorph) и находит вершину (номер слова с 1, 0 - корень) и тип связи каждого слова. Документ anySeg, уже разобранный морфологически, разбирает `parser.annotate(document)`, предложение со своими частями речи и признаками - `parser.parse(words, upos, feats)`, много предложений сразу - `parser.parse_many(sentences)`.
 
+Команда `rusyntax` ставится вместе с пакетом и разбирает текст из файлов или стандартного ввода в [CoNLL-U](https://universaldependencies.org/format.html); на входе может быть и CoNLL-U со своими частями речи и признаками (`rusyntax -i conllu`):
+
+```bash
+echo "Мама мыла раму." | rusyntax
+rusyntax text.txt -o text.conllu
+```
+
+Параметры, вход и вывод команды - на странице [Команда rusyntax](https://sergeyshk.github.io/ruSyntax/cli/).
+
 ## Качество и скорость
 
 LAS от сырого текста на тестовых частях трибанков UD 2.19 (скрипт CoNLL 2018), %:
@@ -96,7 +105,7 @@ uv run pre-commit install
 
 *   **crates/rusyntax** - ядро анализатора на Rust
 *   **crates/rusyntax-py** - модуль Python `rusyntax._rusyntax` на PyO3
-*   **python/rusyntax** - пакет Python
+*   **python/rusyntax** - пакет Python и команда `rusyntax`
 *   **docs** - документация MkDocs на русском и английском
 *   **tests** - тесты пакета Python
 *   **data** - модель и файл сверки ее прямого прохода на Rust с PyTorch

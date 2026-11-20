@@ -51,6 +51,15 @@ print([(word.form, word.head, word.deprel) for word in document.words])
 
 `parse_text` splits the text into sentences and words with the [anySeg](https://github.com/SergeyShk/anySeg) segmenter, tags the words with the part of speech and features of the [ruMorph](https://github.com/SergeyShk/ruMorph) morphological analyzer and finds the head (the word number from 1, 0 for the root) and the relation of every word. `parser.annotate(document)` parses an anySeg document that already has its morphology, `parser.parse(words, upos, feats)` parses a sentence with your own parts of speech and features, and `parser.parse_many(sentences)` parses many sentences at once.
 
+The `rusyntax` command comes with the package and parses text from files or the standard input into [CoNLL-U](https://universaldependencies.org/format.html); its input can also be CoNLL-U with your own parts of speech and features (`rusyntax -i conllu`):
+
+```bash
+echo "Мама мыла раму." | rusyntax
+rusyntax text.txt -o text.conllu
+```
+
+The options, the input and the output of the command are on the [rusyntax command](https://sergeyshk.github.io/ruSyntax/en/cli/) page.
+
 ## Quality and speed
 
 LAS from raw text on the test parts of the UD 2.19 treebanks (CoNLL 2018 script), %:
@@ -96,7 +105,7 @@ Bug reports, ideas and pull requests are welcome - the [issues](https://github.c
 
 *   **crates/rusyntax** - the analyzer core in Rust
 *   **crates/rusyntax-py** - the Python module `rusyntax._rusyntax` built with PyO3
-*   **python/rusyntax** - the Python package
+*   **python/rusyntax** - the Python package and the `rusyntax` command
 *   **docs** - MkDocs documentation in Russian and English
 *   **tests** - tests of the Python package
 *   **data** - the model and the check of its Rust forward pass against PyTorch

@@ -11,6 +11,7 @@ nav:
       - Сравнение: performance.md
       - Авторы: authors.md
     - Анализатор: parser.md
+    - Команда rusyntax: cli.md
 
 theme:
   name: material
@@ -87,6 +88,7 @@ plugins:
             Сравнение: Comparison
             Авторы: Authors
             Анализатор: Parser
+            Команда rusyntax: The rusyntax command
 
 extra:
   social:
