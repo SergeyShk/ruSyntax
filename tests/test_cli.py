@@ -1,4 +1,6 @@
+import errno
 import io
+import os
 import re
 import shutil
 import signal
@@ -62,6 +64,13 @@ class Chunks:
         return chunk
 
 
+class NonBlocking:
+    """Неблокирующий дескриптор без данных: read возвращает None"""
+
+    def read(self, size):
+        return None
+
+
 def test_text(parser):
     code, out, err = call(data=TEXT.encode())
     assert (code, err) == (0, "")
@@ -109,6 +118,14 @@ def test_long_line(parser):
     code, out, _ = call(data=text.encode())
     assert code == 0
     assert out == parser.parse_text(text).to_conllu()
+
+
+def test_non_blocking_input():
+    # «Данных пока нет» - ошибка чтения, а не конец входа
+    stdout, stderr = io.BytesIO(), io.StringIO()
+    assert command.run([], NonBlocking(), stdout, stderr) == 1
+    assert stderr.getvalue() == f"rusyntax: -: {os.strerror(errno.EAGAIN)}\n"
+    assert stdout.getvalue() == b""
 
 
 def test_empty_input():
@@ -164,6 +181,15 @@ def test_conllu_errors(tmp_path):
     code, _, err = call("-i", "conllu", data=TAGGED.replace("VERB", "verb").encode())
     assert code == 1
     assert err.startswith("rusyntax: -: строка 4: неизвестная часть речи 'verb': ожидается")
+    # Из двух ошибок предложения сообщается первая по строкам
+    broken = "1\tМама\t_\tNOUN\t_\t_\tz\t_\t_\t_\n2\tспит\t_\tverb\t_\t_\t_\t_\t_\t_\n\n"
+    assert (
+        call("-i", "conllu", data=broken.encode())[2]
+        == 'rusyntax: -: строка 1: неверная вершина "z"\n'
+    )
+    assert call("-i", "conllu", data=broken.replace("verb", "VERB").encode())[2] == (
+        'rusyntax: -: строка 1: неверная вершина "z"\n'
+    )
 
 
 @pytest.mark.parametrize(
@@ -268,6 +294,17 @@ def test_output_file(tmp_path):
             )
         assert result.returncode == 1
         assert path.read_text(encoding="utf-8") == TEXT
+        # Вход /dev/stdin: на macOS stat этого пути - файл devfs, а не перенаправленный файл
+        for name in ("/dev/stdin", "/dev/fd/0"):
+            with path.open("rb") as stdin:
+                result = subprocess.run(
+                    [sys.executable, "-m", "rusyntax", "-o", str(path), name],
+                    stdin=stdin,
+                    capture_output=True,
+                    check=False,
+                )
+            assert result.returncode == 1, name
+            assert path.read_text(encoding="utf-8") == TEXT
 
 
 def test_model_option(tmp_path):
@@ -278,6 +315,10 @@ def test_model_option(tmp_path):
     code, out, err = call("-m", str(model), data=TEXT.encode())
     assert (code, out) == (1, "")
     assert err.startswith(f"rusyntax: {model}: ")
+    # Модель, которую не открыть, - как входные файлы: путь как задан и причина по-русски
+    missing = tmp_path / "нет.bin"
+    assert call("-m", str(missing)) == (1, "", f"rusyntax: {missing}: файл не найден\n")
+    assert call("-m", str(tmp_path)) == (1, "", f"rusyntax: {tmp_path}: это каталог\n")
 
 
 @pytest.mark.parametrize(

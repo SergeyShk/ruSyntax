@@ -20,6 +20,7 @@ import io
 import os
 import re
 import signal
+import stat
 import sys
 import threading
 from collections.abc import Callable, Iterator, Sequence
@@ -237,7 +238,10 @@ class Input:
 
     def _fill(self) -> None:
         self._waiting()
-        data = self._raw.read(CHUNK) or b""
+        data = self._raw.read(CHUNK)
+        # Неблокирующий дескриптор без данных - ошибка чтения, как у команд anyseg и rumorph
+        if data is None:
+            raise BlockingIOError(errno.EAGAIN, os.strerror(errno.EAGAIN))
         if self._start and data.startswith((b"\xff\xfe", b"\xfe\xff")):
             raise EncodingError(1)
         self._start = self._start and not data
@@ -494,6 +498,12 @@ class Command:
         for index, block in enumerate(blocks):
             error = block.check()
             if error is not None:
+                # Ошибка строк того же предложения выше по файлу - первая
+                try:
+                    anyseg.read_conllu(_join([block]))
+                except ValueError as found:
+                    _, earlier = _locate([block], found)
+                    error = earlier if earlier.line < error.line else error
                 blocks = blocks[:index]
                 break
         run: list[Block] = []
@@ -509,27 +519,36 @@ class Command:
     def _run(self, blocks: list[Block]) -> None:
         if not blocks:
             return
-        text = "".join("\n".join(block.lines) + "\n\n" for block in blocks)
         try:
-            documents = anyseg.read_conllu(text)
+            documents = anyseg.read_conllu(_join(blocks))
         except ValueError as error:
-            match = CONLLU_ERROR.fullmatch(str(error))
-            line = int(match[1]) if match else 1
-            # Номер строки в пачке - номер в файле: каждое предложение и пустая строка после него
-            index, first = 0, 1
-            while index + 1 < len(blocks) and first + len(blocks[index].lines) < line:
-                first += len(blocks[index].lines) + 1
-                index += 1
+            index, failure = _locate(blocks, error)
             self._run(blocks[:index])
-            message = match[2] if match else str(error)
-            for pattern, russian in CONLLU_MESSAGES:
-                message = pattern.sub(russian, message)
-            raise InputError(blocks[index].start + line - first, message) from None
+            raise failure from None
         for document in documents:
             if not blocks[0].tagged:
                 self.analyzer.annotate(document)
             self.parser.annotate(document)
             self.output.write(document.to_conllu())
+
+
+def _join(blocks: list[Block]) -> str:
+    """Текст CoNLL-U предложений: каждое и пустая строка после него"""
+    return "".join("\n".join(block.lines) + "\n\n" for block in blocks)
+
+
+def _locate(blocks: list[Block], error: ValueError) -> tuple[int, InputError]:
+    """Ошибка чтения CoNLL-U anySeg: номер предложения и ошибка с номером строки в файле по-русски"""
+    match = CONLLU_ERROR.fullmatch(str(error))
+    line = int(match[1]) if match else 1
+    index, first = 0, 1
+    while index + 1 < len(blocks) and first + len(blocks[index].lines) < line:
+        first += len(blocks[index].lines) + 1
+        index += 1
+    message = match[2] if match else str(error)
+    for pattern, russian in CONLLU_MESSAGES:
+        message = pattern.sub(russian, message)
+    return index, InputError(blocks[index].start + line - first, message)
 
 
 def run(args: Sequence[str], stdin: _Raw | None, stdout: BinaryIO, stderr: TextIO) -> int:
@@ -569,7 +588,11 @@ def run(args: Sequence[str], stdin: _Raw | None, stdout: BinaryIO, stderr: TextI
         return 0
     try:
         parser = Parser(options.model)
-    except (OSError, ValueError) as error:
+    except OSError as error:
+        model = str(options.model)
+        report(f"{model}: {_describe(error, model)}" if options.model else str(error))
+        return 1
+    except ValueError as error:
         report(str(error))
         return 1
     files = options.files or ["-"]
@@ -646,7 +669,7 @@ def _open_output(
                     if file == "-":
                         sources.append(os.fstat(stdin.fileno()))  # type: ignore[union-attr]
                     else:
-                        sources.append(Path(file).stat())
+                        sources.append(_opened_stat(file))
             if options.model is not None:
                 with contextlib.suppress(OSError):
                     sources.append(options.model.stat())
@@ -658,6 +681,19 @@ def _open_output(
     except OSError as error:
         report(f"{path}: {_describe(error, str(path))}")
         return None
+
+
+def _opened_stat(path: str) -> os.stat_result:
+    """Метаданные входного файла по открытому дескриптору: канал и сокет не открываются"""
+    # На macOS stat("/dev/stdin") - файл devfs, а не перенаправленный в него файл
+    info = Path(path).stat()
+    if stat.S_ISFIFO(info.st_mode) or stat.S_ISSOCK(info.st_mode):
+        return info
+    try:
+        with Path(path).open("rb", buffering=0) as file:
+            return os.fstat(file.fileno())
+    except OSError:
+        return info
 
 
 def _describe(error: OSError, path: str) -> str:
