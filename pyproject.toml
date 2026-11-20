@@ -40,6 +40,9 @@ classifiers = [
 ]
 dependencies = ["anyseg>=0.3.1,<0.5", "rumorph>=0.6,<0.7"]
 
+[project.scripts]
+rusyntax = "rusyntax.__main__:main"
+
 [project.urls]
 Homepage = "https://github.com/SergeyShk/ruSyntax"
 Repository = "https://github.com/SergeyShk/ruSyntax"
