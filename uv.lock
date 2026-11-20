@@ -1203,7 +1203,7 @@ wheels = [
 
 [[package]]
 name = "rusyntax"
-version = "0.1.0.dev5"
+version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "anyseg" },
