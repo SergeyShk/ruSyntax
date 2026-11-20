@@ -125,6 +125,8 @@ combine-as-imports = true
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["N801", "N802"]
+# Пути команды - строки как заданы: pathlib сокращает «./x» и делает из пустого пути «.»
+"python/rusyntax/__main__.py" = ["PTH"]
 
 [tool.mypy]
 python_version = "3.11"

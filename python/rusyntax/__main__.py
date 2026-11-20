@@ -25,7 +25,6 @@ import sys
 import threading
 from collections.abc import Callable, Iterator, Sequence
 from dataclasses import dataclass
-from pathlib import Path
 from typing import BinaryIO, NoReturn, Protocol, TextIO
 
 import anyseg
@@ -132,7 +131,7 @@ class Options:
     """Параметры запуска команды"""
 
     conllu: bool
-    model: Path | None
+    model: str | None
     output: str | None
     files: list[str]
 
@@ -183,7 +182,7 @@ def parse_args(args: Sequence[str]) -> Options | str:
                 )
             conllu = value == "conllu"
         elif name in {"-m", "--model"}:
-            model = Path(value)
+            model = value
         else:
             output = None if value == "-" else value
     return Options(conllu, model, output, files)
@@ -589,8 +588,8 @@ def run(args: Sequence[str], stdin: _Raw | None, stdout: BinaryIO, stderr: TextI
     try:
         parser = Parser(options.model)
     except OSError as error:
-        model = str(options.model)
-        report(f"{model}: {_describe(error, model)}" if options.model else str(error))
+        model = options.model
+        report(f"{model}: {_describe(error, model)}" if model is not None else str(error))
         return 1
     except ValueError as error:
         # Модуль пишет абсолютный путь, команда - путь как задан, как у входных файлов
@@ -632,7 +631,7 @@ def _process(
             if file == "-":
                 raw: _Raw = stdin if stdin is not None else _Empty()
             else:
-                raw = stack.enter_context(Path(file).open("rb", buffering=0))
+                raw = stack.enter_context(open(file, "rb", buffering=0))
             source = Input(raw, command.output.flush)
             if conllu:
                 command.conllu(source)
@@ -664,10 +663,10 @@ def _open_output(
     options: Options, files: list[str], stdin: _Raw | None, report: Callable[[str], None]
 ) -> BinaryIO | None:
     """Файл вывода, создаваемый заново; None - он не создается или затер бы вход или модель"""
-    path = Path(options.output or "")
+    path = options.output or ""
     with contextlib.suppress(OSError):
-        target = path.stat()
-        if path.is_file():
+        target = os.stat(path)
+        if stat.S_ISREG(target.st_mode):
             sources: list[os.stat_result] = []
             for file in files:
                 with contextlib.suppress(OSError, AttributeError, ValueError):
@@ -677,25 +676,25 @@ def _open_output(
                         sources.append(_opened_stat(file))
             if options.model is not None:
                 with contextlib.suppress(OSError):
-                    sources.append(options.model.stat())
+                    sources.append(os.stat(options.model))
             if any(os.path.samestat(target, source) for source in sources):
                 report(f"{path}: файл вывода совпадает с входным файлом или файлом модели")
                 return None
     try:
-        return path.open("wb")
+        return open(path, "wb")
     except OSError as error:
-        report(f"{path}: {_describe(error, str(path))}")
+        report(f"{path}: {_describe(error, path)}")
         return None
 
 
 def _opened_stat(path: str) -> os.stat_result:
     """Метаданные входного файла по открытому дескриптору: канал и сокет не открываются"""
     # На macOS stat("/dev/stdin") - файл devfs, а не перенаправленный в него файл
-    info = Path(path).stat()
+    info = os.stat(path)
     if stat.S_ISFIFO(info.st_mode) or stat.S_ISSOCK(info.st_mode):
         return info
     try:
-        with Path(path).open("rb", buffering=0) as file:
+        with open(path, "rb", buffering=0) as file:
             return os.fstat(file.fileno())
     except OSError:
         return info
@@ -704,7 +703,7 @@ def _opened_stat(path: str) -> os.stat_result:
 def _describe(error: OSError, path: str) -> str:
     """Ошибка ввода-вывода по-русски для частых случаев"""
     if isinstance(error, IsADirectoryError) or (
-        isinstance(error, PermissionError) and Path(path).is_dir()
+        isinstance(error, PermissionError) and os.path.isdir(path)
     ):
         return "это каталог"
     if isinstance(error, FileNotFoundError):

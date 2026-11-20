@@ -319,11 +319,18 @@ def test_model_option(tmp_path, monkeypatch):
     missing = tmp_path / "нет.bin"
     assert call("-m", str(missing)) == (1, "", f"rusyntax: {missing}: файл не найден\n")
     assert call("-m", str(tmp_path)) == (1, "", f"rusyntax: {tmp_path}: это каталог\n")
-    # Относительный путь модели неверного формата - тоже как задан
+    # Пути - как заданы: и относительные, и пустой
     monkeypatch.chdir(tmp_path)
-    code, _, err = call("-m", "model.bin")
-    assert code == 1
-    assert err.startswith("rusyntax: model.bin: неверный формат модели: ")
+    for name in ("model.bin", "./model.bin"):
+        code, _, err = call("-m", name)
+        assert code == 1
+        assert err.startswith(f"rusyntax: {name}: неверный формат модели: ")
+    assert call("-m", "./нет.bin") == (1, "", "rusyntax: ./нет.bin: файл не найден\n")
+    assert call("-m", "") == (1, "", "rusyntax: : файл не найден\n")
+    assert call("-o", "", data=TEXT.encode()) == (1, "", "rusyntax: : файл не найден\n")
+    message = "rusyntax: ./нет/x.conllu: файл не найден\n"
+    assert call("-o", "./нет/x.conllu", data=TEXT.encode()) == (1, "", message)
+    assert call("./нет.txt") == (1, "", "rusyntax: ./нет.txt: файл не найден\n")
 
 
 @pytest.mark.parametrize(
