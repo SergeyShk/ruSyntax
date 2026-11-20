@@ -217,7 +217,7 @@ Exceptions: `ValueError` - a sentence is not three collections, their lengths di
 
 ## Probabilities { #probs }
 
-With `probs=True` every word has, besides its head and relation, two probabilities from the model: `head_prob` of the head among all the words of the sentence and the root, and `deprel_prob` of the relation given this head; the `root` relation of the root is set by the rule, and its probability is 1. Their product is the probability that the relation is right as a whole. The probabilities tell reliable relations from doubtful ones: on dev Taiga, GSD and SynTagRus the head is right for 97-99 % of the words with `head_prob` from 0.99 (52-69 % of the words), and for about 40 % below 0.5 (2-7 % of the words). The probabilities are local - per word, not per tree - and slightly high: the mean `head_prob` is 2-5 points above the share of right heads.
+With `probs=True` every word has, besides its head and relation, two probabilities from the model: `head_prob` of the head among all the words of the sentence and the root (among the candidates of the [window](#tree) in a sentence longer than 1024 words), and `deprel_prob` of the relation given this head; the `root` relation of the root is set by the rule, and its probability is 1. Their product is the probability that the relation is right as a whole. The probabilities tell reliable relations from doubtful ones: on dev Taiga, GSD and SynTagRus the head is right for 97-99 % of the words with `head_prob` from 0.99 (52-69 % of the words), and for about 40 % below 0.5 (2-7 % of the words). The probabilities are local - per word, not per tree - and slightly high: the mean `head_prob` is 2-5 points above the share of right heads.
 
 === "Code"
 

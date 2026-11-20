@@ -68,6 +68,15 @@ class Parser:
         probs: Literal[True],
     ) -> list[tuple[int, str, float, float]]: ...
     @overload
+    def parse(
+        self,
+        words: Iterable[str],
+        upos: Iterable[str],
+        feats: Iterable[_Feats],
+        *,
+        probs: bool,
+    ) -> list[tuple[int, str]] | list[tuple[int, str, float, float]]: ...
+    @overload
     def parse_many(
         self,
         sentences: Iterable[tuple[Iterable[str], Iterable[str], Iterable[_Feats]]],
@@ -81,6 +90,13 @@ class Parser:
         *,
         probs: Literal[True],
     ) -> list[list[tuple[int, str, float, float]]]: ...
+    @overload
+    def parse_many(
+        self,
+        sentences: Iterable[tuple[Iterable[str], Iterable[str], Iterable[_Feats]]],
+        *,
+        probs: bool,
+    ) -> list[list[tuple[int, str]]] | list[list[tuple[int, str, float, float]]]: ...
     def annotate(self, document: _Document) -> None: ...
     def parse_text(
         self, text: str, *, segmenter: _Segmenter | None = None, analyzer: _Analyzer | None = None
