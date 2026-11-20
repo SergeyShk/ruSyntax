@@ -307,7 +307,7 @@ def test_output_file(tmp_path):
             assert path.read_text(encoding="utf-8") == TEXT
 
 
-def test_model_option(tmp_path):
+def test_model_option(tmp_path, monkeypatch):
     model = tmp_path / "model.bin"
     shutil.copy(ROOT / "data" / "ru-syntax.bin", model)
     assert call("--model", str(model), data=TEXT.encode())[1] == call(data=TEXT.encode())[1]
@@ -319,6 +319,11 @@ def test_model_option(tmp_path):
     missing = tmp_path / "нет.bin"
     assert call("-m", str(missing)) == (1, "", f"rusyntax: {missing}: файл не найден\n")
     assert call("-m", str(tmp_path)) == (1, "", f"rusyntax: {tmp_path}: это каталог\n")
+    # Относительный путь модели неверного формата - тоже как задан
+    monkeypatch.chdir(tmp_path)
+    code, _, err = call("-m", "model.bin")
+    assert code == 1
+    assert err.startswith("rusyntax: model.bin: неверный формат модели: ")
 
 
 @pytest.mark.parametrize(

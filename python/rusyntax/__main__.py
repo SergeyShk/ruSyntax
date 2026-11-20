@@ -593,7 +593,12 @@ def run(args: Sequence[str], stdin: _Raw | None, stdout: BinaryIO, stderr: TextI
         report(f"{model}: {_describe(error, model)}" if options.model else str(error))
         return 1
     except ValueError as error:
-        report(str(error))
+        # Модуль пишет абсолютный путь, команда - путь как задан, как у входных файлов
+        _, marker, detail = str(error).partition(": неверный формат модели: ")
+        if options.model is not None and marker:
+            report(f"{options.model}{marker}{detail}")
+        else:
+            report(str(error))
         return 1
     files = options.files or ["-"]
     if options.output is None:
