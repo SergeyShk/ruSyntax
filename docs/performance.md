@@ -14,7 +14,7 @@
 
 | Система | SynTagRus | Taiga | GSD | PUD | Poetry |
 | :------ | --------: | ----: | --: | --: | -----: |
-| ruSyntax | 90,6 / 87,8 | 84,8 / **81,5** | 88,8 / **84,9** | 92,2 / 87,8 | 86,7 / **83,3** |
+| ruSyntax | 90,6 / 87,8 | 84,7 / **81,5** | 88,6 / **84,8** | 92,5 / 88,0 | 86,9 / **83,8** |
 | spaCy ru_core_news_sm | 85,7 / 81,8 | 76,6 / 71,5 | 79,5 / 75,8 | 90,1 / 86,2 | 71,3 / 65,1 |
 | Stanza | 93,0 / 91,2 | 81,5 / 77,6 | 81,4 / 78,0 | 92,7 / 88,2 | 77,9 / 73,4 |
 | Stanza accurate | 94,6 / **93,1** | 84,0 / 80,5 | 84,6 / 81,2 | 93,8 / **89,5** | 80,1 / 76,4 |
@@ -42,7 +42,7 @@
 
 | Система | SynTagRus | Taiga | GSD | PUD | Poetry |
 | :------ | --------: | ----: | --: | --: | -----: |
-| ruSyntax | 91,0 / 88,2 | 86,5 / 83,1 | 90,1 / 86,0 | 92,6 / 88,1 | 87,7 / **84,3** |
+| ruSyntax | 91,1 / 88,2 | 86,5 / 83,2 | 90,0 / 86,0 | 92,8 / 88,3 | 87,9 / **84,7** |
 | spaCy ru_core_news_sm | 87,0 / 82,9 | 80,1 / 74,3 | 84,5 / 80,1 | 91,5 / 87,3 | 73,3 / 66,7 |
 | Stanza | 93,4 / 91,6 | 85,8 / 81,5 | 87,0 / 82,8 | 93,5 / 88,9 | 83,0 / 78,5 |
 | Stanza accurate | 95,1 / **93,6** | 88,5 / **84,5** | 90,2 / **86,2** | 94,5 / **90,1** | 87,8 / 84,0 |
@@ -73,6 +73,6 @@ Slovnet быстрее, но выбирает вершины без дерева
 ``` bash
 rm -rf target/compare/wheels
 uvx maturin@1.15.0 build --release --locked -o target/compare/wheels
-uvx uv@0.13.5 run --with target/compare/wheels/rusyntax-*.whl --with rumorph==0.6.0 --with anyseg==0.4.0 \
+uvx uv@0.13.5 run --with target/compare/wheels/rusyntax-*.whl --with rumorph==0.7.0 --with anyseg==0.5.0 \
     scripts/compare.py target/compare
 ```

@@ -217,7 +217,7 @@ Exceptions: `ValueError` - a sentence is not three collections, their lengths di
 
 ## Probabilities { #probs }
 
-With `probs=True` every word has, besides its head and relation, two probabilities from the model: `head_prob` of the head among all the words of the sentence and the root (among the candidates of the [window](#tree) in a sentence longer than 1024 words), and `deprel_prob` of the relation given this head; the `root` relation of the root is set by the rule, and its probability is 1. Their product is the probability that the relation is right as a whole. The probabilities tell reliable relations from doubtful ones: on dev Taiga, GSD and SynTagRus the head is right for 97-99 % of the words with `head_prob` from 0.99 (52-69 % of the words), and for about 40 % below 0.5 (2-7 % of the words). The probabilities are local - per word, not per tree - and slightly high: the mean `head_prob` is 2-5 points above the share of right heads.
+With `probs=True` every word has, besides its head and relation, two probabilities from the model: `head_prob` of the head among all the words of the sentence and the root (among the candidates of the [window](#tree) in a sentence longer than 1024 words), and `deprel_prob` of the relation given this head; the `root` relation of the root is set by the rule, and its probability is 1. Their product is the probability that the relation is right as a whole. The probabilities tell reliable relations from doubtful ones: on dev Taiga, GSD and SynTagRus the head is right for 97-99 % of the words with `head_prob` from 0.99 (52-68 % of the words), and for about 40 % below 0.5 (3-8 % of the words). The probabilities are local - per word, not per tree - and slightly high: the mean `head_prob` is 2-5 points above the share of right heads.
 
 === "Code"
 
@@ -234,12 +234,12 @@ With `probs=True` every word has, besides its head and relation, two probabiliti
 === "Result"
 
     ```
-    [('Я', 2, 'nsubj', 1.0, 1.0), ('видел', 0, 'root', 1.0, 1.0), ('девочку', 2, 'obj', 1.0, 1.0), ('с', 5, 'case', 1.0, 1.0), ('биноклем', 2, 'obl', 0.54, 1.0), ('.', 2, 'punct', 1.0, 1.0)]
+    [('Я', 2, 'nsubj', 1.0, 1.0), ('видел', 0, 'root', 1.0, 1.0), ('девочку', 2, 'obj', 1.0, 1.0), ('с', 5, 'case', 1.0, 1.0), ('биноклем', 2, 'obl', 0.57, 1.0), ('.', 2, 'punct', 1.0, 1.0)]
     ```
 
 ## The parse tree { #tree }
 
-Every word has one head, a sentence has one root, and there are no cycles; non-projective trees (crossing relations) are allowed. The parser picks the tree with the highest sum of head scores (the Chu - Liu - Edmonds algorithm). For degenerate sentences, where the best heads give more than 16 cycles or 8 root candidates, the tree is built faster: the extra roots and the nodes of cycles are attached to the best root. The tree of a sentence longer than 1024 words is built the same way - text without punctuation, for example, which the segmenter does not split into sentences; the head of a word in it is looked for among 64 words on each side and the root, so the parsing time grows linearly with the length. The relations come with subtypes, as in the UD annotation (`nsubj:pass`, `obl:tmod`); only the root has the `root` relation; the CoNLL 2018 evaluation compares the relation without the subtype.
+Every word has one head, a sentence has one root, and there are no cycles; non-projective trees (crossing relations) are allowed. The parser picks the tree with the highest sum of head scores (the Chu - Liu - Edmonds algorithm). For degenerate sentences, where the best heads give more than 16 cycles or 8 root candidates, the tree is built faster: the extra roots and the nodes of cycles are attached to the best root. The tree of a sentence longer than 1024 words is built the same way - text without punctuation, for example, which the segmenter does not split into sentences; the head of a word in it is looked for among 64 words on each side and the root, so the parsing time grows linearly with the length. The relations come with subtypes, as in the UD annotation (`nsubj:pass`, `obl:tmod`); only the root has the `root` relation; the CoNLL 2018 evaluation compares the relation without the subtype. A mention `@name` at the start of a sentence, unless it is the root, is an address to the root of the sentence (`vocative`), as UD annotates it: the training treebanks have few such mentions, and the model hardly recognizes them by itself.
 
 ## Threads and processes { #threads }
 
