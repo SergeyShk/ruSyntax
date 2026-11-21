@@ -355,6 +355,40 @@ mod tests {
     }
 
     #[test]
+    fn mention_at_start_is_vocative() {
+        // Модель со связью vocative вместо obl:tmod: упоминание в начале - корень или обращение к корню
+        let mut with_vocative = items(1, 5, false);
+        with_vocative.retain(|(name, _)| *name != "relations");
+        with_vocative.push((
+            "relations",
+            Item::Strings(vec!["root", "nsubj", "obj", "punct", "vocative"]),
+        ));
+        let parser = Parser::from_bytes(&file(&with_vocative)).unwrap();
+        let w = Word::new;
+        let (mut applied, mut root) = (0, 0);
+        for verb in ["мыла", "мыть", "мама", "раму", "дом"] {
+            for first in ["@мама", "@m", "@рама_2026"] {
+                let words = [
+                    w(first, "PROPN", "_"),
+                    w(verb, "VERB", "_"),
+                    w(".", "PUNCT", "_"),
+                ];
+                let relations = parser.parse(&words);
+                assert!(is_tree(&relations), "{relations:?}");
+                let top = relations.iter().position(|r| r.head == 0).unwrap() + 1;
+                if relations[0].head == 0 {
+                    root += 1;
+                    continue;
+                }
+                applied += 1;
+                assert_eq!((relations[0].head, relations[0].deprel), (top, "vocative"));
+                assert!(relations[0].head_prob > 0.0 && relations[0].deprel_prob > 0.0);
+            }
+        }
+        assert!(applied > 0, "правило ни разу не сработало, корней {root}");
+    }
+
+    #[test]
     fn checksum_is_crc_of_body() {
         let data = model(1, 5, false);
         let parser = Parser::from_bytes(&data).unwrap();

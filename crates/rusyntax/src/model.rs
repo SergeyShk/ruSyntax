@@ -124,6 +124,8 @@ pub(crate) struct Model {
     rel_dim: usize,
     /// Номер связи `root`: она только у слова с вершиной 0, и у него только она
     root: Option<usize>,
+    /// Номер связи `vocative`: обращение `@имя` в начале предложения
+    vocative: Option<usize>,
     pub relations: Vec<String>,
     pub sources: Option<String>,
     /// CRC32 файла после заголовка
@@ -231,6 +233,7 @@ impl Model {
         let label = Tiled::new(&entries.matrix("label.weight", relations.len(), 2 * rel_dim)?);
         let label_bias = entries.vector("label.bias", relations.len())?;
         let root = relations.iter().position(|relation| relation == "root");
+        let vocative = relations.iter().position(|relation| relation == "vocative");
         let sources = entries.text("sources")?.map(str::to_owned);
         entries.finish()?;
         Ok(Model {
@@ -253,6 +256,7 @@ impl Model {
             label_bias,
             rel_dim,
             root,
+            vocative,
             relations,
             sources,
             checksum: format::checksum(data),
@@ -328,19 +332,32 @@ impl Model {
         states
             .iter()
             .zip(&lens)
-            .map(|(state, &n)| self.decode(state, n))
+            .zip(sentences)
+            .map(|((state, &n), words)| self.decode(state, n, mention(words)))
             .collect()
     }
 
-    /// Вершины и связи одного предложения по выходу BiLSTM (`n` позиций, 0 - корень)
-    fn decode(&self, state: &[f32], n: usize) -> Parse {
+    /// Вершины и связи одного предложения по выходу BiLSTM (`n` позиций, 0 - корень); `mention` - первое
+    /// слово - упоминание `@имя`
+    fn decode(&self, state: &[f32], n: usize, mention: bool) -> Parse {
         let (a, r) = (self.arc_dim, self.rel_dim);
         let dep = self.arc_dep.apply(state, n);
         let head = self.arc_head.apply(state, n);
         let mut u = vec![0.0f32; n * a];
         self.arc.apply_all(&dep, &self.arc_bias, &mut u);
         let score = |i: usize, j: usize| dot(&u[i * a..(i + 1) * a], &head[j * a..(j + 1) * a]);
-        let (heads, head_probs) = tree::heads(n, &score);
+        let (mut heads, mut head_probs) = tree::heads(n, &score);
+        // Упоминание в начале предложения - обращение к сказуемому: в train таких почти нет, и модель
+        // знак @ не видит (форма редкая, окончания короче имени)
+        let vocative = match self.vocative {
+            Some(label) if mention && n > 2 && heads[1] != 0 => {
+                let root = (2..n).find(|&i| heads[i] == 0).unwrap_or(heads[1]);
+                heads[1] = root;
+                head_probs[1] = tree::head_prob(n, 1, root, &score);
+                Some(label)
+            }
+            _ => None,
+        };
         let rel_dep = self.rel_dep.apply(state, n);
         let rel_head = self.rel_head.apply(state, n);
         let mut pairs = vec![0.0f32; (n - 1) * 2 * r];
@@ -358,6 +375,10 @@ impl Model {
                 // У корня связь root - по правилу, а не по оценке
                 let (label, label_prob) = match self.root {
                     Some(root) if heads[i] == 0 => (root, 1.0),
+                    root if i == 1 && vocative.is_some() => {
+                        let label = vocative.unwrap_or_default();
+                        (label, label_prob(row, label, root))
+                    }
                     root => {
                         let label = best_label(row, root);
                         (label, label_prob(row, label, root))
@@ -372,6 +393,13 @@ impl Model {
             })
             .collect()
     }
+}
+
+/// Первое слово предложения - упоминание: `@` и хотя бы один знак после него
+fn mention(words: &[Input<'_>]) -> bool {
+    words
+        .first()
+        .is_some_and(|word| word.form.len() > 1 && word.form.starts_with('@'))
 }
 
 /// Вероятность связи `label` - softmax оценок связей без `skip` (связи корня у слова с вершиной не корень)
@@ -455,6 +483,24 @@ mod tests {
         assert_eq!(keys("дома"), ["1:а", "2:ма", "3:ома", "4:дома"]);
         assert_eq!(keys("домами"), ["1:и", "2:ми", "3:ами", "4:мами"]);
         assert_eq!(keys(""), ["1:^", "2:^", "3:^", "4:^"]);
+    }
+
+    #[test]
+    fn mention_is_at_sign_and_name_first() {
+        let input = |forms: &[&'static str]| -> Vec<Input<'static>> {
+            (forms.iter())
+                .map(|&form| Input {
+                    form,
+                    upos: "X",
+                    feats: "_",
+                })
+                .collect()
+        };
+        assert!(mention(&input(&["@мама", "мыла"])));
+        assert!(mention(&input(&["@m"])));
+        for forms in [&["@"][..], &["мама", "@мама"], &["m@m"], &[]] {
+            assert!(!mention(&input(forms)), "{forms:?}");
+        }
     }
 
     #[test]

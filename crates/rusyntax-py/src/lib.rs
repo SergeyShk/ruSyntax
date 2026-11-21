@@ -315,8 +315,15 @@ fn parse_all<'p>(
 /// Пример использования:
 ///     >>> from rusyntax import Parser
 ///     >>> parser = Parser()
-///     >>> parser.parse(["Мама", "мыла", "раму"], ["NOUN", "VERB", "NOUN"],
-///     ...              ["Case=Nom|Gender=Fem|Number=Sing", "Gender=Fem|Tense=Past", "Case=Acc"])
+///     >>> parser.parse(
+///     ...     ["Мама", "мыла", "раму"],
+///     ...     ["NOUN", "VERB", "NOUN"],
+///     ...     [
+///     ...         "Animacy=Anim|Case=Nom|Gender=Fem|Number=Sing",
+///     ...         "Aspect=Imp|Gender=Fem|Mood=Ind|Number=Sing|Tense=Past|VerbForm=Fin|Voice=Act",
+///     ...         "Animacy=Inan|Case=Acc|Gender=Fem|Number=Sing",
+///     ...     ],
+///     ... )
 ///     [(2, 'nsubj'), (0, 'root'), (2, 'obj')]
 #[pyclass(frozen, weakref, module = "rusyntax")]
 struct Parser {

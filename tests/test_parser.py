@@ -17,7 +17,13 @@ ROOT = Path(__file__).parents[1]
 MODEL = ROOT / "data" / "ru-syntax.bin"
 WORDS = ["Мама", "мыла", "раму", "."]
 UPOS = ["NOUN", "VERB", "NOUN", "PUNCT"]
-FEATS = ["Case=Nom|Gender=Fem|Number=Sing", "Gender=Fem|Tense=Past", "Case=Acc", None]
+# Признаки, как их ставит ruMorph: с урезанными модель разбирает хуже и неустойчиво
+FEATS = [
+    "Animacy=Anim|Case=Nom|Gender=Fem|Number=Sing",
+    "Aspect=Imp|Gender=Fem|Mood=Ind|Number=Sing|Tense=Past|VerbForm=Fin|Voice=Act",
+    "Animacy=Inan|Case=Acc|Gender=Fem|Number=Sing",
+    None,
+]
 
 
 @pytest.fixture(scope="module")
@@ -52,12 +58,12 @@ def test_parse_empty_and_unknown_feats(parser):
 
 def test_parse_feats_mapping(parser):
     expected = parser.parse(WORDS, UPOS, FEATS)
+    # Те же признаки словарем, ключи в обратном порядке: запись упорядочивается
     feats = [
-        {"Number": "Sing", "Gender": "Fem", "Case": "Nom"},
-        {"Gender": "Fem", "Tense": "Past"},
-        {"Case": "Acc"},
-        {},
+        dict(reversed([pair.split("=") for pair in text.split("|")])) if text else {}
+        for text in FEATS
     ]
+    assert list(feats[0]) == ["Number", "Gender", "Case", "Animacy"]
     assert parser.parse(WORDS, UPOS, feats) == expected
     with pytest.raises(TypeError, match="у слова 0 признаки и их значения должны быть строками"):
         parser.parse(["Мама"], ["NOUN"], [{"Case": 1}])

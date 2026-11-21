@@ -86,6 +86,25 @@ pub(crate) fn heads(n: usize, score: &impl Fn(usize, usize) -> f32) -> (Vec<usiz
     (heads, probs)
 }
 
+/// Вероятность вершины `head` у слова `d` среди всех кандидатов: для вершины, назначенной после `heads`
+pub(crate) fn head_prob(
+    n: usize,
+    d: usize,
+    head: usize,
+    score: &impl Fn(usize, usize) -> f32,
+) -> f32 {
+    let row: Vec<f32> = (0..n)
+        .map(|h| {
+            if h == d {
+                f32::NEG_INFINITY
+            } else {
+                finite(score(d, h))
+            }
+        })
+        .collect();
+    (row[head] as f64 - log_sum(&row)).exp() as f32
+}
+
 /// Логарифм суммы экспонент оценок
 fn log_sum(row: &[f32]) -> f64 {
     let max = row.iter().copied().fold(f32::NEG_INFINITY, f32::max) as f64;

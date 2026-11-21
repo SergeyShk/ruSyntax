@@ -51,8 +51,8 @@
 Пример использования:
     rm -rf target/compare/wheels
     uvx maturin@1.15.0 build --release --locked -o target/compare/wheels
-    uvx uv@0.13.5 run --with target/compare/wheels/rusyntax-*.whl --with rumorph==0.6.0 \\
-        --with anyseg==0.4.0 scripts/compare.py target/compare
+    uvx uv@0.13.5 run --with target/compare/wheels/rusyntax-*.whl --with rumorph==0.7.0 \\
+        --with anyseg==0.5.0 scripts/compare.py target/compare
 """
 
 import argparse

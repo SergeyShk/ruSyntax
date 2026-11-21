@@ -2,7 +2,7 @@
 # requires-python = ">=3.12,<3.14"
 # dependencies = [
 #     "numpy==2.5.5",
-#     "rumorph==0.6.0",
+#     "rumorph==0.7.0",
 #     "torch==2.15.0",
 # ]
 # ///
@@ -12,7 +12,10 @@
 Описание:
     Берет части train и dev UD_Russian-Taiga, UD_Russian-GSD и UD_Russian-Poetry из каталога
     `scripts/export_ud.py`, ставит словам часть речи и признаки ruMorph с контекстом (на тех же
-    тегах парсер работает у пользователя) и учит модель: вход слова - форма (20 тыс. самых
+    тегах парсер работает у пользователя) и учит модель. Контекстная модель ruMorph училась на
+    train Taiga и Poetry, и там ее теги чище, чем на новом тексте: у неоднозначного слова train
+    с вероятностью `NOISE` берется следующий разбор с другими тегами, так что точность тегов
+    train близка к dev. Модель: вход слова - форма (20 тыс. самых
     частых, строчные, «ё» как «е»), окончания длиной 1-4 с меткой начала, UPOS и сумма
     вложений первых 12 пар признаков; BiLSTM 2×128; вершина - биаффинная оценка и дерево
     Чу - Лю - Эдмондса с одним корнем, связь - линейная оценка пары «зависимое - вершина».
@@ -57,6 +60,9 @@ DEV = {
 SELECT = ("Taiga", "GSD")
 # Предложений каждого dev в файле сверки с ядром
 CHECK = 100
+# Шум тегов train по трибанкам: точность UPOS и признаков ruMorph 0.7 на train сравнивается с dev
+# (Taiga - 93,9 % против 90,1 %, Poetry - 94,4 % против 92,7 %, GSD - без разрыва)
+NOISE = {"taiga": 0.09, "poetry": 0.04}
 CONFIG = {
     "hidden": 128,
     "layers": 2,
@@ -118,22 +124,33 @@ def feats_text(feats: dict[str, str]) -> str:
     return "|".join(f"{name}={value}" for name, value in pairs) or "_"
 
 
-def load(paths: list[Path], analyzer: rumorph.Analyzer) -> list[Sentence]:
+def load(
+    paths: list[Path], analyzer: rumorph.Analyzer, rng: random.Random | None = None
+) -> list[Sentence]:
     """
     Предложения с тегами ruMorph и эталонными вершинами и связями
 
     Аргументы:
         paths (list[Path]): Файлы CoNLL-U
         analyzer (rumorph.Analyzer): Морфологический анализатор
+        rng (random.Random | None): Зашумить теги по `NOISE` (для train)
 
     Вывод:
         list[Sentence]: Предложения
     """
     out = []
     for path in paths:
+        noise = NOISE.get(path.name.split("_")[1].split("-")[0], 0.0) if rng else 0.0
         for words in read(path):
             forms = [w[1] for w in words]
-            best = [analyses[0] for analyses in analyzer.analyze_sentence(forms)]
+            best = []
+            for analyses in analyzer.analyze_sentence(forms):
+                choice = analyses[0]
+                if rng and rng.random() < noise:
+                    tags = (choice.pos, feats_text(choice.feats))
+                    other = (a for a in analyses if (a.pos, feats_text(a.feats)) != tags)
+                    choice = next(other, choice)
+                best.append(choice)
             out.append(
                 (
                     forms,
@@ -479,10 +496,20 @@ def predict(
             scores, rel_dep, rel_head = model(words, sufs, upos, feats, lens)
             logp = torch.log_softmax(scores, -1).cpu().numpy()
             heads = torch.zeros(words.shape, dtype=torch.long)
-            for k in range(len(idx)):
+            mentions = []
+            for k, i in enumerate(idx):
                 n = int(lens[k])
                 heads[k, :n] = torch.tensor(tree(logp[k, :n, :n]))
+                # Упоминание в начале предложения - обращение к сказуемому, как в ядре
+                first = sentences[i][0][0]
+                if first.startswith("@") and len(first) > 1 and n > 2 and heads[k, 1] != 0:
+                    roots = [j for j in range(2, n) if heads[k, j] == 0]
+                    heads[k, 1] = roots[0] if roots else heads[k, 1]
+                    mentions.append(k)
             labels = model.labels(rel_dep, rel_head, heads.to(device)).argmax(-1).cpu()
+            if "vocative" in vocab.relation:
+                for k in mentions:
+                    labels[k, 1] = vocab.relation["vocative"]
             for k, i in enumerate(idx):
                 n = int(lens[k])
                 out[i] = (
@@ -734,7 +761,7 @@ def main() -> None:
     torch.manual_seed(args.seed)
     device = torch.device(args.device)
     analyzer = rumorph.Analyzer()
-    sentences = load([args.data / name for name in TRAIN], analyzer)
+    sentences = load([args.data / name for name in TRAIN], analyzer, random.Random(args.seed + 7))
     dev = {name: load([args.data / file], analyzer) for name, file in DEV.items()}
     vocab = Vocab(sentences)
     model = Parser(vocab).to(device)
@@ -757,6 +784,7 @@ def main() -> None:
         "train": TRAIN,
         "select": list(SELECT),
         "tags": f"rumorph {metadata.version('rumorph')}",
+        "noise": NOISE,
         "torch": metadata.version("torch"),
         "python": platform.python_version(),
         "seed": args.seed,
