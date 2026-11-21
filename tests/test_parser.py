@@ -429,6 +429,8 @@ def test_sources(parser):
     assert sources["ud"] == "r2.19"
     assert set(sources["treebanks"]) == {"UD_Russian-Taiga", "UD_Russian-GSD", "UD_Russian-Poetry"}
     assert sources["tags"].startswith("rumorph ")
+    # Шум тегов train - по трибанкам, как в scripts/train.py
+    assert set(sources["noise"]) == {"taiga", "poetry"}
     # Контрольная сумма - CRC32 файла после заголовка из 16 байт
     assert sources["crc32"] == f"{zlib.crc32(MODEL.read_bytes()[16:]):08x}"
 

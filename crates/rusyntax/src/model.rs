@@ -375,10 +375,8 @@ impl Model {
                 // У корня связь root - по правилу, а не по оценке
                 let (label, label_prob) = match self.root {
                     Some(root) if heads[i] == 0 => (root, 1.0),
-                    root if i == 1 && vocative.is_some() => {
-                        let label = vocative.unwrap_or_default();
-                        (label, label_prob(row, label, root))
-                    }
+                    // Связь упоминания ставит правило, как root корню
+                    _ if i == 1 && vocative.is_some() => (vocative.unwrap_or_default(), 1.0),
                     root => {
                         let label = best_label(row, root);
                         (label, label_prob(row, label, root))

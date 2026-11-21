@@ -78,7 +78,8 @@ pub struct Relation<'p> {
     /// Вероятность вершины по модели: softmax оценок всех кандидатов в вершины слова (у предложений
     /// длиннее 1024 слов - кандидатов в окне)
     pub head_prob: f32,
-    /// Вероятность типа связи при этой вершине: softmax оценок связей; у корня `root` - 1
+    /// Вероятность типа связи при этой вершине: softmax оценок связей; у связей, которые ставит правило, -
+    /// `root` корня и `vocative` упоминания `@имя` в начале предложения - 1
     pub deprel_prob: f32,
 }
 
@@ -382,7 +383,7 @@ mod tests {
                 }
                 applied += 1;
                 assert_eq!((relations[0].head, relations[0].deprel), (top, "vocative"));
-                assert!(relations[0].head_prob > 0.0 && relations[0].deprel_prob > 0.0);
+                assert!(relations[0].head_prob > 0.0 && relations[0].deprel_prob == 1.0);
             }
         }
         assert!(applied > 0, "правило ни разу не сработало, корней {root}");
