@@ -315,8 +315,15 @@ fn parse_all<'p>(
 /// Пример использования:
 ///     >>> from rusyntax import Parser
 ///     >>> parser = Parser()
-///     >>> parser.parse(["Мама", "мыла", "раму"], ["NOUN", "VERB", "NOUN"],
-///     ...              ["Case=Nom|Gender=Fem|Number=Sing", "Gender=Fem|Tense=Past", "Case=Acc"])
+///     >>> parser.parse(
+///     ...     ["Мама", "мыла", "раму"],
+///     ...     ["NOUN", "VERB", "NOUN"],
+///     ...     [
+///     ...         "Animacy=Anim|Case=Nom|Gender=Fem|Number=Sing",
+///     ...         "Aspect=Imp|Gender=Fem|Mood=Ind|Number=Sing|Tense=Past|VerbForm=Fin|Voice=Act",
+///     ...         "Animacy=Inan|Case=Acc|Gender=Fem|Number=Sing",
+///     ...     ],
+///     ... )
 ///     [(2, 'nsubj'), (0, 'root'), (2, 'obj')]
 #[pyclass(frozen, weakref, module = "rusyntax")]
 struct Parser {
@@ -474,7 +481,8 @@ impl Parser {
     ///     list[tuple[int, str]]: Номер вершины (0 - корень) и тип связи каждого слова; с probs -
     ///         четверки: еще вероятность вершины среди всех слов предложения и корня (у предложений
     ///         длиннее 1024 слов - среди 64 слов с каждой стороны и корня) и вероятность типа
-    ///         связи при этой вершине (у корня root - 1)
+    ///         связи при этой вершине (у связей по правилу - root корня и vocative упоминания
+    ///         @имя в начале предложения - 1)
     ///
     /// Исключения:
     ///     ValueError: Если длины words, upos и feats не совпадают или часть речи не из 17

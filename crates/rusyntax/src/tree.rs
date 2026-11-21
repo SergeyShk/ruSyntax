@@ -86,6 +86,28 @@ pub(crate) fn heads(n: usize, score: &impl Fn(usize, usize) -> f32) -> (Vec<usiz
     (heads, probs)
 }
 
+/// Вероятность вершины `head` у слова `d` среди тех же кандидатов, что у `heads`: все слова и корень,
+/// у предложений длиннее `FULL` слов - окно, корень и `head`; для вершины, назначенной после `heads`
+pub(crate) fn head_prob(
+    n: usize,
+    d: usize,
+    head: usize,
+    score: &impl Fn(usize, usize) -> f32,
+) -> f32 {
+    let candidates: Vec<usize> = if n > FULL + 1 {
+        let window = d.saturating_sub(WINDOW).max(1)..=(d + WINDOW).min(n - 1);
+        let outside = (head != 0 && head.abs_diff(d) > WINDOW).then_some(head);
+        std::iter::once(0).chain(window).chain(outside).collect()
+    } else {
+        (0..n).collect()
+    };
+    let row: Vec<f32> = (candidates.into_iter())
+        .filter(|&h| h != d)
+        .map(|h| finite(score(d, h)))
+        .collect();
+    (finite(score(d, head)) as f64 - log_sum(&row)).exp() as f32
+}
+
 /// Логарифм суммы экспонент оценок
 fn log_sum(row: &[f32]) -> f64 {
     let max = row.iter().copied().fold(f32::NEG_INFINITY, f32::max) as f64;
@@ -407,6 +429,26 @@ mod tests {
                         "{d}: {p} {expected}"
                     );
                 }
+            }
+        }
+    }
+
+    #[test]
+    fn head_prob_matches_heads() {
+        // Вершина, назначенная после heads, получает вероятность среди тех же кандидатов
+        let mut rng = Rng(13);
+        for n in [5, 40, FULL + 1, FULL + 300] {
+            let width = n.min(97);
+            let values: Vec<f32> = (0..n * width).map(|_| rng.next()).collect();
+            let score = |d: usize, h: usize| values[d * width + h % width];
+            let (tree, probs) = heads(n, &score);
+            for d in 1..n {
+                let p = head_prob(n, d, tree[d], &score);
+                assert!(
+                    (p - probs[d]).abs() < 1e-6,
+                    "n {n}, слово {d}: {p} против {}",
+                    probs[d]
+                );
             }
         }
     }

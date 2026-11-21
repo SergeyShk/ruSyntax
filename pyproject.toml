@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "rusyntax"
-version = "0.2.0.dev2"
+version = "0.2.0.dev3"
 description = "Fast Russian dependency parser written in Rust with a Python API"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -38,7 +38,7 @@ classifiers = [
     "Typing :: Typed",
     "Natural Language :: Russian",
 ]
-dependencies = ["anyseg>=0.3.1,<0.5", "rumorph>=0.6,<0.7"]
+dependencies = ["anyseg>=0.5,<0.6", "rumorph>=0.7,<0.8"]
 
 [project.scripts]
 rusyntax = "rusyntax.__main__:main"
