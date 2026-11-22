@@ -290,6 +290,25 @@
   
 
       
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="cli/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Команда rusyntax
+
+      </a>
+    </li>
+  
+
+      
     </ul>
   </div>
 </nav>
@@ -633,6 +652,33 @@
   
 
     
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Команда rusyntax
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
   </ul>
 </nav>
                   </div>
@@ -723,7 +769,7 @@
 <h2 id="how">Как это работает<a class="headerlink" href="#how" title="Permanent link">&para;</a></h2>
 <p>Предложение проходит три шага: сегментатор anySeg делит текст на слова, морфологический анализатор ruMorph ставит каждому слову часть речи и признаки - падеж, число, род, - а ruSyntax по словам и их признакам находит, от какого слова зависит каждое и как: подлежащее зависит от сказуемого, определение - от определяемого слова, предлог - от слова, к которому он относится.</p>
 <p><img alt="Как ruSyntax разбирает предложение: текст, слова, части речи и падежи, дерево зависимостей" src="img/pipeline.svg" /></p>
-<p>Методы анализатора описаны на странице <a href="parser/">Анализатор</a>, устройство и обучение модели - на странице <a href="model/">Модель</a>, качество и скорость в сравнении с другими анализаторами - на странице <a href="performance/">Сравнение</a>.</p>
+<p>Методы анализатора описаны на странице <a href="parser/">Анализатор</a>, устройство и обучение модели - на странице <a href="model/">Модель</a>, качество и скорость в сравнении с другими анализаторами - на странице <a href="performance/">Сравнение</a>. Файлы и потоки разбирает в CoNLL-U <a href="cli/">команда rusyntax</a>.</p>
 <h2 id="_1">Установка<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h2>
 <p>Требуется Python 3.11 или новее.</p>
 <div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>rusyntax

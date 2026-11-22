@@ -292,6 +292,25 @@
   
 
       
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../cli/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Команда rusyntax
+
+      </a>
+    </li>
+  
+
+      
     </ul>
   </div>
 </nav>
@@ -674,6 +693,33 @@
   
 
     
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Команда rusyntax
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
   </ul>
 </nav>
                   </div>
@@ -803,10 +849,10 @@
 <tr>
 <td style="text-align: left;">ruSyntax</td>
 <td style="text-align: right;">90,6 / 87,8</td>
-<td style="text-align: right;">84,8 / <strong>81,5</strong></td>
-<td style="text-align: right;">88,8 / <strong>84,9</strong></td>
-<td style="text-align: right;">92,2 / 87,8</td>
-<td style="text-align: right;">86,7 / <strong>83,3</strong></td>
+<td style="text-align: right;">84,7 / <strong>81,5</strong></td>
+<td style="text-align: right;">88,6 / <strong>84,8</strong></td>
+<td style="text-align: right;">92,5 / 88,0</td>
+<td style="text-align: right;">86,9 / <strong>83,8</strong></td>
 </tr>
 <tr>
 <td style="text-align: left;">spaCy ru_core_news_sm</td>
@@ -871,7 +917,7 @@
 <td style="text-align: right;">99,6 / 98,9</td>
 <td style="text-align: right;">99,1 / 89,9</td>
 <td style="text-align: right;">99,1 / 96,3</td>
-<td style="text-align: right;">99,8 / 99,2</td>
+<td style="text-align: right;">99,8 / 99,3</td>
 <td style="text-align: right;">99,6 / 95,9</td>
 </tr>
 <tr>
@@ -933,11 +979,11 @@
 <tbody>
 <tr>
 <td style="text-align: left;">ruSyntax</td>
-<td style="text-align: right;">91,0 / 88,2</td>
-<td style="text-align: right;">86,5 / 83,1</td>
-<td style="text-align: right;">90,1 / 86,0</td>
-<td style="text-align: right;">92,6 / 88,1</td>
-<td style="text-align: right;">87,7 / <strong>84,3</strong></td>
+<td style="text-align: right;">91,1 / 88,3</td>
+<td style="text-align: right;">86,5 / 83,2</td>
+<td style="text-align: right;">90,0 / 86,0</td>
+<td style="text-align: right;">92,8 / 88,3</td>
+<td style="text-align: right;">87,9 / <strong>84,7</strong></td>
 </tr>
 <tr>
 <td style="text-align: left;">spaCy ru_core_news_sm</td>
@@ -998,7 +1044,7 @@
 <td style="text-align: left;">ruSyntax</td>
 <td style="text-align: right;">29 526</td>
 <td style="text-align: right;"><strong>0,08</strong></td>
-<td style="text-align: right;"><strong>160</strong></td>
+<td style="text-align: right;"><strong>168</strong></td>
 </tr>
 <tr>
 <td style="text-align: left;">spaCy ru_core_news_sm</td>
@@ -1032,12 +1078,12 @@
 </tr>
 </tbody>
 </table>
-<p>Slovnet быстрее, но выбирает вершины без дерева, не дает морфологии и отстает по LAS на 5-31 пункт. Stanza accurate мерилась на первых 20 006 словах. Пик памяти зависит от объема текста за вызов: все системы, кроме Stanza accurate, получали весь SynTagRus test одним вызовом, поэтому ее пик с остальными не сравнивается. Замер - Apple M3 Pro, Python 3.11, load average 2-3.</p>
+<p>Slovnet быстрее, но выбирает вершины без дерева, не дает морфологии и отстает по LAS на 6-31 пункт. Stanza accurate мерилась на первых 20 006 словах. Пик памяти зависит от объема текста за вызов: все системы, кроме Stanza accurate, получали весь SynTagRus test одним вызовом, поэтому ее пик с остальными не сравнивается. Замер - Apple M3 Pro, Python 3.11, load average 2-3; у ruSyntax 0.2 с ruMorph 0.7 скорость и загрузка те же, что у 0.1, в пределах шума (поочередный замер при одной нагрузке), а память выросла на 8 МБ.</p>
 <h2 id="reproduce">Как воспроизвести<a class="headerlink" href="#reproduce" title="Permanent link">&para;</a></h2>
 <p>Скрипт <code>scripts/compare.py</code> скачивает тестовые части трибанков, скрипт оценки CoNLL 2018 и модели аналогов с проверкой SHA-256 (модели Stanza - ее загрузчиком с проверкой сумм файлов), разбирает наборы каждой системой и считает метрики, а скорость, загрузку и память меряет в отдельном процессе на систему, и пишет таблицы. Версии пакетов закреплены в <code>scripts/compare.py.lock</code>; ruSyntax берется из колеса, собранного из репозитория, а ruMorph и anySeg закрепляются в команде (их версии пишутся в результаты):</p>
 <div class="highlight"><pre><span></span><code>rm<span class="w"> </span>-rf<span class="w"> </span>target/compare/wheels
 uvx<span class="w"> </span>maturin@1.15.0<span class="w"> </span>build<span class="w"> </span>--release<span class="w"> </span>--locked<span class="w"> </span>-o<span class="w"> </span>target/compare/wheels
-uvx<span class="w"> </span>uv@0.13.5<span class="w"> </span>run<span class="w"> </span>--with<span class="w"> </span>target/compare/wheels/rusyntax-*.whl<span class="w"> </span>--with<span class="w"> </span><span class="nv">rumorph</span><span class="o">==</span><span class="m">0</span>.6.0<span class="w"> </span>--with<span class="w"> </span><span class="nv">anyseg</span><span class="o">==</span><span class="m">0</span>.4.0<span class="w"> </span><span class="se">\</span>
+uvx<span class="w"> </span>uv@0.13.5<span class="w"> </span>run<span class="w"> </span>--with<span class="w"> </span>target/compare/wheels/rusyntax-*.whl<span class="w"> </span>--with<span class="w"> </span><span class="nv">rumorph</span><span class="o">==</span><span class="m">0</span>.7.0<span class="w"> </span>--with<span class="w"> </span><span class="nv">anyseg</span><span class="o">==</span><span class="m">0</span>.5.0<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>scripts/compare.py<span class="w"> </span>target/compare
 </code></pre></div>
 

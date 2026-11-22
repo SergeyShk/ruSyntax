@@ -290,6 +290,25 @@
   
 
       
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="cli/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  The rusyntax command
+
+      </a>
+    </li>
+  
+
+      
     </ul>
   </div>
 </nav>
@@ -633,6 +652,33 @@
   
 
     
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The rusyntax command
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
   </ul>
 </nav>
                   </div>
@@ -723,7 +769,7 @@
 <h2 id="how">How it works<a class="headerlink" href="#how" title="Permanent link">&para;</a></h2>
 <p>A sentence goes through three steps: the anySeg segmenter splits the text into words, the ruMorph morphological analyzer gives every word its part of speech and features - case, number, gender - and ruSyntax uses the words and their features to find which word every word depends on and how: the subject depends on the predicate, a modifier on the word it modifies, a preposition on the word it belongs to.</p>
 <p><img alt="How ruSyntax parses a sentence: the text, the words, the parts of speech and cases, the dependency tree" src="img/pipeline.svg" /></p>
-<p>The methods of the parser are on the <a href="parser/">Parser</a> page, the architecture and training of the model on the <a href="model/">Model</a> page, quality and speed compared with other parsers on the <a href="performance/">Comparison</a> page.</p>
+<p>The methods of the parser are on the <a href="parser/">Parser</a> page, the architecture and training of the model on the <a href="model/">Model</a> page, quality and speed compared with other parsers on the <a href="performance/">Comparison</a> page. The <a href="cli/">rusyntax command</a> parses files and streams into CoNLL-U.</p>
 <h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
 <p>Python 3.11 or newer is required.</p>
 <div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>rusyntax

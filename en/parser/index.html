@@ -16,6 +16,8 @@
         <link rel="prev" href="../authors/">
       
       
+        <link rel="next" href="../cli/">
+      
       
         
           <link rel="alternate" href="../../parser/" hreflang="ru">
@@ -284,6 +286,25 @@
     
   
   Parser
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../cli/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  The rusyntax command
 
       </a>
     </li>
@@ -671,6 +692,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#probs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Probabilities
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#tree" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -696,6 +728,33 @@
   
 </nav>
       
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The rusyntax command
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -799,6 +858,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#probs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Probabilities
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#tree" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -843,7 +913,7 @@
 <h1 id="parser">Parser<a class="headerlink" href="#parser" title="Permanent link">&para;</a></h1>
 <div class="signature highlight"><pre><span></span><code><span class="n">Parser</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
 </code></pre></div>
-<p>A dependency parser: for every word of a sentence it finds the head - the word it depends on - and the <a href="https://universaldependencies.org/u/dep/">Universal Dependencies</a> relation. The head is the number of a word in the sentence starting from 1; the root of the sentence has 0. Without <code>path</code> the package <a href="../model/">model</a> is used: it is built into the module and loaded once per process (about 10 ms), so a new parser is created instantly. Parsers share a model from a file too: while the file does not change, it is loaded once.</p>
+<p>A dependency parser: for every word of a sentence it finds the head - the word it depends on - and the <a href="https://universaldependencies.org/u/dep/">Universal Dependencies</a> relation. The head is the number of a word in the sentence starting from 1; the root of the sentence has 0. Without <code>path</code> the package <a href="../model/">model</a> is used: it is built into the module and loaded once per process (about 10 ms), so a new parser is created instantly. Parsers share a model from a file too - also by another path or link to the same file: while the file does not change, it is loaded once, and the last loaded one stays in memory without parsers too.</p>
 <p>Exceptions:</p>
 <ul>
 <li><code>FileNotFoundError</code> - there is no model file;</li>
@@ -910,17 +980,47 @@
 </tr>
 <tr>
 <td style="text-align: left;"><code>sources</code></td>
-<td style="text-align: left;"><code>dict</code> / <code>None</code></td>
-<td style="text-align: left;">How the model was trained: the UD release, the treebanks and their commits, the ruMorph version, LAS on dev</td>
+<td style="text-align: left;"><code>dict</code></td>
+<td style="text-align: left;">About the model: the checksum <code>crc32</code> (the CRC32 of the model file after its header, which tells one model from another) and how the model was trained - the UD release, the treebanks and their commits, the ruMorph version, LAS on dev</td>
 </tr>
 </tbody>
 </table>
 <h2 id="methods">Methods<a class="headerlink" href="#methods" title="Permanent link">&para;</a></h2>
 <h3 id="parse_text">Parsing a text<a class="headerlink" href="#parse_text" title="Permanent link">&para;</a></h3>
-<div class="signature highlight"><pre><span></span><code><span class="n">parse_text</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+<div class="signature highlight"><pre><span></span><code><span class="n">parse_text</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">segmenter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">analyzer</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
 </code></pre></div>
-<p>Splits the text into sentences and words with the <a href="https://github.com/SergeyShk/anySeg">anySeg</a> segmenter, gives the words the lemma, part of speech and features of the <a href="https://github.com/SergeyShk/ruMorph">ruMorph</a> morphological analyzer in context and finds the head and relation of every word. Returns an anySeg document (<code>anyseg.Document</code>) with the columns <code>lemma</code>, <code>upos</code>, <code>feats</code>, <code>head</code> and <code>deprel</code>: its words, sentences and CoNLL-U output are described in the <a href="https://sergeyshk.github.io/anySeg/document/">anySeg documentation</a>. The segmenter and analyzer are created on the first call and reused afterwards. The parser does not change the sentence boundaries of anySeg.</p>
-<p>Exceptions: <code>TypeError</code> - the text is not a string.</p>
+<p>Splits the text into sentences and words with the <a href="https://github.com/SergeyShk/anySeg">anySeg</a> segmenter, gives the words the lemma, part of speech and features of the <a href="https://github.com/SergeyShk/ruMorph">ruMorph</a> morphological analyzer in context and finds the head and relation of every word. Returns an anySeg document (<code>anyseg.Document</code>) with the columns <code>lemma</code>, <code>upos</code>, <code>feats</code>, <code>head</code> and <code>deprel</code>: its words, sentences and CoNLL-U output are described in the <a href="https://sergeyshk.github.io/anySeg/document/">anySeg documentation</a>. The default segmenter and analyzer are created on the first call and reused afterwards; your own - a segmenter with your abbreviations or an analyzer with your words, for example - are passed as parameters. The parser does not change the sentence boundaries of anySeg.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Parameter</th>
+<th style="text-align: left;">Type</th>
+<th style="text-align: left;">Default</th>
+<th style="text-align: left;">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><code>text</code></td>
+<td style="text-align: left;"><code>str</code></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">The text</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>segmenter</code></td>
+<td style="text-align: left;"><code>anyseg.Segmenter</code></td>
+<td style="text-align: left;"><code>None</code></td>
+<td style="text-align: left;">A segmenter or an object with the <code>segment</code> method; by default <code>Segmenter("ru")</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>analyzer</code></td>
+<td style="text-align: left;"><code>rumorph.Analyzer</code></td>
+<td style="text-align: left;"><code>None</code></td>
+<td style="text-align: left;">A morphological analyzer or an object with the <code>annotate</code> method; by default <code>Analyzer()</code></td>
+</tr>
+</tbody>
+</table>
+<p>Exceptions: <code>TypeError</code> - the text is not a string, the segmenter has no <code>segment</code> method, <code>segment</code> returned no document or the analyzer has no <code>annotate</code> method; <code>ValueError</code> - the analyzer gave the words no parts of speech.</p>
 <div class="tabbed-set tabbed-alternate" data-tabs="2:2"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1">Code</label><label for="__tabbed_2_2">Result</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
@@ -941,6 +1041,23 @@
 </div>
 </div>
 </div>
+<p>An abbreviation the segmenter does not know splits the sentence; your own segmenter knows it:</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="3:2"><input checked="checked" id="__tabbed_3_1" name="__tabbed_3" type="radio" /><input id="__tabbed_3_2" name="__tabbed_3" type="radio" /><div class="tabbed-labels"><label for="__tabbed_3_1">Code</label><label for="__tabbed_3_2">Result</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">anyseg</span><span class="w"> </span><span class="kn">import</span> <span class="n">Segmenter</span>
+
+<span class="n">segmenter</span> <span class="o">=</span> <span class="n">Segmenter</span><span class="p">(</span><span class="s2">"ru"</span><span class="p">,</span> <span class="n">abbreviations</span><span class="o">=</span><span class="p">[</span><span class="s2">"прапорщ."</span><span class="p">])</span>
+<span class="n">document</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_text</span><span class="p">(</span><span class="s2">"Звонил прапорщ. Петров."</span><span class="p">,</span> <span class="n">segmenter</span><span class="o">=</span><span class="n">segmenter</span><span class="p">)</span>
+<span class="p">[(</span><span class="n">word</span><span class="o">.</span><span class="n">form</span><span class="p">,</span> <span class="n">word</span><span class="o">.</span><span class="n">head</span><span class="p">,</span> <span class="n">word</span><span class="o">.</span><span class="n">deprel</span><span class="p">)</span> <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">document</span><span class="o">.</span><span class="n">words</span><span class="p">]</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code>[('Звонил', 0, 'root'), ('прапорщ.', 1, 'nsubj'), ('Петров', 2, 'flat:name'), ('.', 1, 'punct')]
+</code></pre></div>
+</div>
+</div>
+</div>
 <h3 id="annotate">Parsing a document<a class="headerlink" href="#annotate" title="Permanent link">&para;</a></h3>
 <div class="signature highlight"><pre><span></span><code><span class="n">annotate</span><span class="p">(</span><span class="n">document</span><span class="p">)</span>
 </code></pre></div>
@@ -950,7 +1067,7 @@
 <li><code>ValueError</code> - a word has no part of speech, a part of speech is not one of the 17 UD parts of speech, or the sentences of the document do not follow each other over all its words;</li>
 <li><code>TypeError</code> - this is not a document (<code>parse_text</code> parses a text), the columns of the document are not strings, or a word number is not an integer.</li>
 </ul>
-<div class="tabbed-set tabbed-alternate" data-tabs="3:2"><input checked="checked" id="__tabbed_3_1" name="__tabbed_3" type="radio" /><input id="__tabbed_3_2" name="__tabbed_3" type="radio" /><div class="tabbed-labels"><label for="__tabbed_3_1">Code</label><label for="__tabbed_3_2">Result</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="4:2"><input checked="checked" id="__tabbed_4_1" name="__tabbed_4" type="radio" /><input id="__tabbed_4_2" name="__tabbed_4" type="radio" /><div class="tabbed-labels"><label for="__tabbed_4_1">Code</label><label for="__tabbed_4_2">Result</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">anyseg</span><span class="w"> </span><span class="kn">import</span> <span class="n">Segmenter</span>
@@ -969,9 +1086,9 @@
 </div>
 </div>
 <h3 id="parse">Parsing a sentence<a class="headerlink" href="#parse" title="Permanent link">&para;</a></h3>
-<div class="signature highlight"><pre><span></span><code><span class="n">parse</span><span class="p">(</span><span class="n">words</span><span class="p">,</span> <span class="n">upos</span><span class="p">,</span> <span class="n">feats</span><span class="p">)</span>
+<div class="signature highlight"><pre><span></span><code><span class="n">parse</span><span class="p">(</span><span class="n">words</span><span class="p">,</span> <span class="n">upos</span><span class="p">,</span> <span class="n">feats</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">probs</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 </code></pre></div>
-<p>The head and relation of every word of the sentence in the same order; an empty sentence gives an empty list. The words come with their part of speech and features in the UD annotation - as ruMorph gives them. The part of speech is one of the 17 UD parts of speech in capitals (<code>NOUN</code>, <code>VERB</code>, <code>X</code>): with other tags, lowercase or OpenCorpora ones for example, the model would parse almost at random, so they are an error. The features are a CoNLL-U field (<code>Case=Nom|Number=Sing</code>) or a dictionary, like <code>feats</code> of a ruMorph analysis; <code>_</code>, an empty string, an empty dictionary or <code>None</code> mean no features. Features unknown to the model are skipped. Parsing runs without the GIL.</p>
+<p>The head and relation of every word of the sentence in the same order; an empty sentence gives an empty list. The words come with their part of speech and features in the UD annotation - as ruMorph gives them. The part of speech is one of the 17 UD parts of speech in capitals (<code>NOUN</code>, <code>VERB</code>, <code>X</code>): with other tags, lowercase or OpenCorpora ones for example, the model would parse almost at random, so they are an error. The features are a CoNLL-U field (<code>Case=Nom|Number=Sing</code>) or a dictionary, like <code>feats</code> of a ruMorph analysis; <code>_</code>, an empty string, an empty dictionary or <code>None</code> mean no features. Features unknown to the model are skipped. The features should be complete, as ruMorph gives them: without features LAS on dev is 5.7 points lower, with only case, gender and number 3.2 lower, without the aspect of a verb 2.2 lower. Parsing runs without the GIL.</p>
 <table>
 <thead>
 <tr>
@@ -996,20 +1113,29 @@
 <td style="text-align: left;"><code>Iterable[str \| Mapping[str, str] \| None]</code></td>
 <td style="text-align: left;">The UD features of every word</td>
 </tr>
+<tr>
+<td style="text-align: left;"><code>probs</code></td>
+<td style="text-align: left;"><code>bool</code></td>
+<td style="text-align: left;">Add the <a href="#probs">probabilities</a> of the head and the relation: quadruples instead of pairs</td>
+</tr>
 </tbody>
 </table>
 <p>Exceptions:</p>
 <ul>
 <li><code>ValueError</code> - the lengths of <code>words</code>, <code>upos</code> and <code>feats</code> differ, or a part of speech is not one of the 17 UD parts of speech;</li>
-<li><code>TypeError</code> - the input is not a collection of strings (a string instead of a list is an error too).</li>
+<li><code>TypeError</code> - the input is not a collection of strings (a string instead of a list is an error too) or <code>probs</code> is not a bool.</li>
 </ul>
-<div class="tabbed-set tabbed-alternate" data-tabs="4:2"><input checked="checked" id="__tabbed_4_1" name="__tabbed_4" type="radio" /><input id="__tabbed_4_2" name="__tabbed_4" type="radio" /><div class="tabbed-labels"><label for="__tabbed_4_1">Code</label><label for="__tabbed_4_2">Result</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="5:2"><input checked="checked" id="__tabbed_5_1" name="__tabbed_5" type="radio" /><input id="__tabbed_5_2" name="__tabbed_5" type="radio" /><div class="tabbed-labels"><label for="__tabbed_5_1">Code</label><label for="__tabbed_5_2">Result</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <div class="highlight"><pre><span></span><code><span class="n">parser</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span>
     <span class="p">[</span><span class="s2">"Я"</span><span class="p">,</span> <span class="s2">"читаю"</span><span class="p">,</span> <span class="s2">"книгу"</span><span class="p">],</span>
     <span class="p">[</span><span class="s2">"PRON"</span><span class="p">,</span> <span class="s2">"VERB"</span><span class="p">,</span> <span class="s2">"NOUN"</span><span class="p">],</span>
-    <span class="p">[</span><span class="s2">"Case=Nom|Number=Sing|Person=1"</span><span class="p">,</span> <span class="s2">"Aspect=Imp|Tense=Pres"</span><span class="p">,</span> <span class="s2">"Case=Acc|Number=Sing"</span><span class="p">],</span>
+    <span class="p">[</span>
+        <span class="s2">"Case=Nom|Number=Sing|Person=1|PronType=Prs"</span><span class="p">,</span>
+        <span class="s2">"Aspect=Imp|Mood=Ind|Number=Sing|Person=1|Tense=Pres|VerbForm=Fin|Voice=Act"</span><span class="p">,</span>
+        <span class="s2">"Animacy=Inan|Case=Acc|Gender=Fem|Number=Sing"</span><span class="p">,</span>
+    <span class="p">],</span>
 <span class="p">)</span>
 </code></pre></div>
 </div>
@@ -1020,7 +1146,7 @@
 </div>
 </div>
 <p>If the text is already split into words, ruMorph gives them the morphology in context: the first analysis of every word is the one its context model picked.</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="5:2"><input checked="checked" id="__tabbed_5_1" name="__tabbed_5" type="radio" /><input id="__tabbed_5_2" name="__tabbed_5" type="radio" /><div class="tabbed-labels"><label for="__tabbed_5_1">Code</label><label for="__tabbed_5_2">Result</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="6:2"><input checked="checked" id="__tabbed_6_1" name="__tabbed_6" type="radio" /><input id="__tabbed_6_2" name="__tabbed_6" type="radio" /><div class="tabbed-labels"><label for="__tabbed_6_1">Code</label><label for="__tabbed_6_2">Result</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">rumorph</span><span class="w"> </span><span class="kn">import</span> <span class="n">Analyzer</span>
@@ -1037,11 +1163,11 @@
 </div>
 </div>
 <h3 id="parse_many">Parsing many sentences<a class="headerlink" href="#parse_many" title="Permanent link">&para;</a></h3>
-<div class="signature highlight"><pre><span></span><code><span class="n">parse_many</span><span class="p">(</span><span class="n">sentences</span><span class="p">)</span>
+<div class="signature highlight"><pre><span></span><code><span class="n">parse_many</span><span class="p">(</span><span class="n">sentences</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">probs</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 </code></pre></div>
-<p>The same as <code>parse</code> for every sentence, but faster: sentences of close lengths are parsed four at a time. A sentence is a triple (forms, parts of speech, features). Parsing runs without the GIL in chunks of 256 sentences; Ctrl+C works between them.</p>
-<p>Exceptions: <code>ValueError</code> - a sentence is not three collections, their lengths differ, or a part of speech is not one of the 17 UD parts of speech; <code>TypeError</code> - the input is not a collection of strings.</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="6:2"><input checked="checked" id="__tabbed_6_1" name="__tabbed_6" type="radio" /><input id="__tabbed_6_2" name="__tabbed_6" type="radio" /><div class="tabbed-labels"><label for="__tabbed_6_1">Code</label><label for="__tabbed_6_2">Result</label></div>
+<p>The same as <code>parse</code> for every sentence, but faster: sentences of close lengths are parsed four at a time. A sentence is a triple (forms, parts of speech, features); <code>probs=True</code> adds the <a href="#probs">probabilities</a>, as in <code>parse</code>. Parsing runs without the GIL in chunks of 256 sentences; Ctrl+C works between them.</p>
+<p>Exceptions: <code>ValueError</code> - a sentence is not three collections, their lengths differ, or a part of speech is not one of the 17 UD parts of speech; <code>TypeError</code> - the input is not a collection of strings or <code>probs</code> is not a bool.</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="7:2"><input checked="checked" id="__tabbed_7_1" name="__tabbed_7" type="radio" /><input id="__tabbed_7_2" name="__tabbed_7" type="radio" /><div class="tabbed-labels"><label for="__tabbed_7_1">Code</label><label for="__tabbed_7_2">Result</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <div class="highlight"><pre><span></span><code><span class="n">parser</span><span class="o">.</span><span class="n">parse_many</span><span class="p">(</span>
@@ -1058,10 +1184,30 @@
 </div>
 </div>
 </div>
+<h2 id="probs">Probabilities<a class="headerlink" href="#probs" title="Permanent link">&para;</a></h2>
+<p>With <code>probs=True</code> every word has, besides its head and relation, two probabilities from the model: <code>head_prob</code> of the head among all the words of the sentence and the root (in a sentence longer than 1024 words, among the candidates of the <a href="#tree">window</a> and the head given by building the tree), and <code>deprel_prob</code> of the relation given this head among the relations other than <code>root</code>; the <code>root</code> relation of the root and the <code>vocative</code> relation of a mention <code>@name</code> at the start of a sentence are set by the <a href="#tree">rule</a>, and their probability is 1. Their product is the probability that the relation is right as a whole. The probabilities tell reliable relations from doubtful ones: on dev Taiga, GSD and SynTagRus the head is right for 98-99 % of the words with <code>head_prob</code> from 0.99 (52-68 % of the words), and for about 40 % below 0.5 (3-8 % of the words). The probabilities are local - per word, not per tree - and slightly high: the mean <code>head_prob</code> is 2-5 points above the share of right heads, and their product 3-8 points above the share of right relations.</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="8:2"><input checked="checked" id="__tabbed_8_1" name="__tabbed_8" type="radio" /><input id="__tabbed_8_2" name="__tabbed_8" type="radio" /><div class="tabbed-labels"><label for="__tabbed_8_1">Code</label><label for="__tabbed_8_2">Result</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="n">words</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"Я"</span><span class="p">,</span> <span class="s2">"видел"</span><span class="p">,</span> <span class="s2">"девочку"</span><span class="p">,</span> <span class="s2">"с"</span><span class="p">,</span> <span class="s2">"биноклем"</span><span class="p">,</span> <span class="s2">"."</span><span class="p">]</span>
+<span class="n">best</span> <span class="o">=</span> <span class="p">[</span><span class="n">analyses</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">analyses</span> <span class="ow">in</span> <span class="n">Analyzer</span><span class="p">()</span><span class="o">.</span><span class="n">analyze_sentence</span><span class="p">(</span><span class="n">words</span><span class="p">)]</span>
+<span class="n">relations</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">words</span><span class="p">,</span> <span class="p">[</span><span class="n">a</span><span class="o">.</span><span class="n">pos</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">best</span><span class="p">],</span> <span class="p">[</span><span class="n">a</span><span class="o">.</span><span class="n">feats</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">best</span><span class="p">],</span> <span class="n">probs</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="p">[</span>
+    <span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="n">head</span><span class="p">,</span> <span class="n">deprel</span><span class="p">,</span> <span class="nb">round</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="nb">round</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">word</span><span class="p">,</span> <span class="p">(</span><span class="n">head</span><span class="p">,</span> <span class="n">deprel</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">q</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">words</span><span class="p">,</span> <span class="n">relations</span><span class="p">)</span>
+<span class="p">]</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code>[('Я', 2, 'nsubj', 1.0, 1.0), ('видел', 0, 'root', 1.0, 1.0), ('девочку', 2, 'obj', 1.0, 1.0), ('с', 5, 'case', 1.0, 1.0), ('биноклем', 2, 'obl', 0.57, 1.0), ('.', 2, 'punct', 1.0, 1.0)]
+</code></pre></div>
+</div>
+</div>
+</div>
 <h2 id="tree">The parse tree<a class="headerlink" href="#tree" title="Permanent link">&para;</a></h2>
-<p>Every word has one head, a sentence has one root, and there are no cycles; non-projective trees (crossing relations) are allowed. The parser picks the tree with the highest sum of head scores (the Chu - Liu - Edmonds algorithm). For degenerate sentences, where the best heads give more than 16 cycles or 8 root candidates, the tree is built faster: the extra roots and the nodes of cycles are attached to the best root. The tree of a sentence longer than 1024 words is built the same way - text without punctuation, for example, which the segmenter does not split into sentences; the head of a word in it is looked for among 64 words on each side and the root, so the parsing time grows linearly with the length. The relations come with subtypes, as in the UD annotation (<code>nsubj:pass</code>, <code>obl:tmod</code>); only the root has the <code>root</code> relation; the CoNLL 2018 evaluation compares the relation without the subtype.</p>
+<p>Every word has one head, a sentence has one root, and there are no cycles; non-projective trees (crossing relations) are allowed. The parser picks the tree with the highest sum of head scores (the Chu - Liu - Edmonds algorithm). For degenerate sentences, where the best heads give more than 16 cycles or 8 root candidates, the tree is built faster: the extra roots and the nodes of cycles are attached to the best root. The tree of a sentence longer than 1024 words is built the same way - text without punctuation, for example, which the segmenter does not split into sentences; the head of a word in it is looked for among 64 words on each side and the root, so the parsing time grows linearly with the length. The relations come with subtypes, as in the UD annotation (<code>nsubj:pass</code>, <code>obl:tmod</code>); only the root has the <code>root</code> relation; the CoNLL 2018 evaluation compares the relation without the subtype. A mention <code>@name</code> at the start of a sentence, unless it is the root, is an address to the root of the sentence (<code>vocative</code>), as UD annotates it: the training treebanks have few such mentions, and the model hardly recognizes them by itself.</p>
 <h2 id="threads">Threads and processes<a class="headerlink" href="#threads" title="Permanent link">&para;</a></h2>
-<p>The parser does not change while parsing: one parser can be shared between threads, and parsing runs without the GIL, so the threads parse in parallel. On Python 3.14t and 3.15t without the GIL the module does not enable the GIL. The parser moves to another process with pickle: the absolute path to the model, or the mark of the package model, is saved. <code>copy.copy</code> and <code>copy.deepcopy</code> return the same object. Parsers are equal if their model comes from the same file or both use the package model; a parser can be held by a weak reference (<code>weakref</code>).</p>
+<p>The parser does not change while parsing: one parser can be shared between threads, and parsing runs without the GIL, so the threads parse in parallel. On Python 3.14t and 3.15t without the GIL the module does not enable the GIL. The parser moves to another process with pickle: the absolute path to the model, or the mark of the package model, is saved. <code>copy.copy</code> and <code>copy.deepcopy</code> return the same object. Parsers are equal if their model comes from the same file (also by another path or link) that did not change between their creation, or both use the package model; a parser can be held by a weak reference (<code>weakref</code>).</p>
 
 
 

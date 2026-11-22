@@ -16,6 +16,8 @@
         <link rel="prev" href="../authors/">
       
       
+        <link rel="next" href="../cli/">
+      
       
         
           <link rel="alternate" href="./" hreflang="ru">
@@ -284,6 +286,25 @@
     
   
   Анализатор
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../cli/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Команда rusyntax
 
       </a>
     </li>
@@ -671,6 +692,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#probs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Вероятности
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#tree" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -696,6 +728,33 @@
   
 </nav>
       
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Команда rusyntax
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -799,6 +858,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#probs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Вероятности
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#tree" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -843,7 +913,7 @@
 <h1 id="_1">Анализатор<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h1>
 <div class="signature highlight"><pre><span></span><code><span class="n">Parser</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
 </code></pre></div>
-<p>Синтаксический анализатор: для каждого слова предложения находит вершину - слово, от которого оно зависит, - и тип связи <a href="https://universaldependencies.org/u/dep/">Universal Dependencies</a>. Вершина - номер слова в предложении с 1, у корня предложения - 0. Без <code>path</code> используется <a href="../model/">модель</a> из пакета: она вшита в модуль и загружается один раз на процесс (около 10 мс), поэтому новый анализатор создается мгновенно. Модель из файла анализаторы тоже делят: пока файл не изменился, она загружается один раз.</p>
+<p>Синтаксический анализатор: для каждого слова предложения находит вершину - слово, от которого оно зависит, - и тип связи <a href="https://universaldependencies.org/u/dep/">Universal Dependencies</a>. Вершина - номер слова в предложении с 1, у корня предложения - 0. Без <code>path</code> используется <a href="../model/">модель</a> из пакета: она вшита в модуль и загружается один раз на процесс (около 10 мс), поэтому новый анализатор создается мгновенно. Модель из файла анализаторы тоже делят - и по другому пути или ссылке к тому же файлу: пока файл не изменился, она загружается один раз, а последняя загруженная остается в памяти и без анализаторов.</p>
 <p>Исключения:</p>
 <ul>
 <li><code>FileNotFoundError</code> - нет файла модели;</li>
@@ -910,17 +980,47 @@
 </tr>
 <tr>
 <td style="text-align: left;"><code>sources</code></td>
-<td style="text-align: left;"><code>dict</code> / <code>None</code></td>
-<td style="text-align: left;">Описание обучения модели: релиз UD, трибанки и их коммиты, версия ruMorph, LAS на dev</td>
+<td style="text-align: left;"><code>dict</code></td>
+<td style="text-align: left;">Описание модели: контрольная сумма <code>crc32</code> (CRC32 файла модели после заголовка, отличает одну модель от другой) и описание обучения - релиз UD, трибанки и их коммиты, версия ruMorph, LAS на dev</td>
 </tr>
 </tbody>
 </table>
 <h2 id="_3">Методы<a class="headerlink" href="#_3" title="Permanent link">&para;</a></h2>
 <h3 id="parse_text">Разбор текста<a class="headerlink" href="#parse_text" title="Permanent link">&para;</a></h3>
-<div class="signature highlight"><pre><span></span><code><span class="n">parse_text</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+<div class="signature highlight"><pre><span></span><code><span class="n">parse_text</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">segmenter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">analyzer</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
 </code></pre></div>
-<p>Делит текст на предложения и слова сегментатором <a href="https://github.com/SergeyShk/anySeg">anySeg</a>, ставит словам лемму, часть речи и признаки морфологическим анализатором <a href="https://github.com/SergeyShk/ruMorph">ruMorph</a> с контекстом и находит вершину и связь каждого слова. Возвращает документ anySeg (<code>anyseg.Document</code>) со столбцами <code>lemma</code>, <code>upos</code>, <code>feats</code>, <code>head</code> и <code>deprel</code>: его слова, предложения и запись в CoNLL-U описаны в <a href="https://sergeyshk.github.io/anySeg/document/">документации anySeg</a>. Сегментатор и анализатор создаются при первом вызове и дальше переиспользуются. Границы предложений anySeg анализатор не меняет.</p>
-<p>Исключения: <code>TypeError</code> - текст не строка.</p>
+<p>Делит текст на предложения и слова сегментатором <a href="https://github.com/SergeyShk/anySeg">anySeg</a>, ставит словам лемму, часть речи и признаки морфологическим анализатором <a href="https://github.com/SergeyShk/ruMorph">ruMorph</a> с контекстом и находит вершину и связь каждого слова. Возвращает документ anySeg (<code>anyseg.Document</code>) со столбцами <code>lemma</code>, <code>upos</code>, <code>feats</code>, <code>head</code> и <code>deprel</code>: его слова, предложения и запись в CoNLL-U описаны в <a href="https://sergeyshk.github.io/anySeg/document/">документации anySeg</a>. Сегментатор и анализатор по умолчанию создаются при первом вызове и дальше переиспользуются; свои - например, сегментатор со своими сокращениями или анализатор со своими словами - передаются параметрами. Границы предложений anySeg анализатор не меняет.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Параметр</th>
+<th style="text-align: left;">Тип</th>
+<th style="text-align: left;">По умолчанию</th>
+<th style="text-align: left;">Описание</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><code>text</code></td>
+<td style="text-align: left;"><code>str</code></td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Текст</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>segmenter</code></td>
+<td style="text-align: left;"><code>anyseg.Segmenter</code></td>
+<td style="text-align: left;"><code>None</code></td>
+<td style="text-align: left;">Сегментатор или объект с методом <code>segment</code>; по умолчанию - <code>Segmenter("ru")</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>analyzer</code></td>
+<td style="text-align: left;"><code>rumorph.Analyzer</code></td>
+<td style="text-align: left;"><code>None</code></td>
+<td style="text-align: left;">Морфологический анализатор или объект с методом <code>annotate</code>; по умолчанию - <code>Analyzer()</code></td>
+</tr>
+</tbody>
+</table>
+<p>Исключения: <code>TypeError</code> - текст не строка, у сегментатора нет метода <code>segment</code>, <code>segment</code> вернул не документ или у анализатора нет метода <code>annotate</code>; <code>ValueError</code> - анализатор не поставил словам части речи.</p>
 <div class="tabbed-set tabbed-alternate" data-tabs="2:2"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1">Код</label><label for="__tabbed_2_2">Результат</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
@@ -941,6 +1041,23 @@
 </div>
 </div>
 </div>
+<p>Сокращение, которого сегментатор не знает, делит предложение; свой сегментатор его знает:</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="3:2"><input checked="checked" id="__tabbed_3_1" name="__tabbed_3" type="radio" /><input id="__tabbed_3_2" name="__tabbed_3" type="radio" /><div class="tabbed-labels"><label for="__tabbed_3_1">Код</label><label for="__tabbed_3_2">Результат</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">anyseg</span><span class="w"> </span><span class="kn">import</span> <span class="n">Segmenter</span>
+
+<span class="n">segmenter</span> <span class="o">=</span> <span class="n">Segmenter</span><span class="p">(</span><span class="s2">"ru"</span><span class="p">,</span> <span class="n">abbreviations</span><span class="o">=</span><span class="p">[</span><span class="s2">"прапорщ."</span><span class="p">])</span>
+<span class="n">document</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_text</span><span class="p">(</span><span class="s2">"Звонил прапорщ. Петров."</span><span class="p">,</span> <span class="n">segmenter</span><span class="o">=</span><span class="n">segmenter</span><span class="p">)</span>
+<span class="p">[(</span><span class="n">word</span><span class="o">.</span><span class="n">form</span><span class="p">,</span> <span class="n">word</span><span class="o">.</span><span class="n">head</span><span class="p">,</span> <span class="n">word</span><span class="o">.</span><span class="n">deprel</span><span class="p">)</span> <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">document</span><span class="o">.</span><span class="n">words</span><span class="p">]</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code>[('Звонил', 0, 'root'), ('прапорщ.', 1, 'nsubj'), ('Петров', 2, 'flat:name'), ('.', 1, 'punct')]
+</code></pre></div>
+</div>
+</div>
+</div>
 <h3 id="annotate">Разбор документа<a class="headerlink" href="#annotate" title="Permanent link">&para;</a></h3>
 <div class="signature highlight"><pre><span></span><code><span class="n">annotate</span><span class="p">(</span><span class="n">document</span><span class="p">)</span>
 </code></pre></div>
@@ -950,7 +1067,7 @@
 <li><code>ValueError</code> - у слова нет части речи, часть речи не из 17 частей речи UD или предложения документа не идут подряд по всем его словам;</li>
 <li><code>TypeError</code> - это не документ (текст разбирает <code>parse_text</code>), столбцы документа не строки или номер слова не целое число.</li>
 </ul>
-<div class="tabbed-set tabbed-alternate" data-tabs="3:2"><input checked="checked" id="__tabbed_3_1" name="__tabbed_3" type="radio" /><input id="__tabbed_3_2" name="__tabbed_3" type="radio" /><div class="tabbed-labels"><label for="__tabbed_3_1">Код</label><label for="__tabbed_3_2">Результат</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="4:2"><input checked="checked" id="__tabbed_4_1" name="__tabbed_4" type="radio" /><input id="__tabbed_4_2" name="__tabbed_4" type="radio" /><div class="tabbed-labels"><label for="__tabbed_4_1">Код</label><label for="__tabbed_4_2">Результат</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">anyseg</span><span class="w"> </span><span class="kn">import</span> <span class="n">Segmenter</span>
@@ -969,9 +1086,9 @@
 </div>
 </div>
 <h3 id="parse">Разбор предложения<a class="headerlink" href="#parse" title="Permanent link">&para;</a></h3>
-<div class="signature highlight"><pre><span></span><code><span class="n">parse</span><span class="p">(</span><span class="n">words</span><span class="p">,</span> <span class="n">upos</span><span class="p">,</span> <span class="n">feats</span><span class="p">)</span>
+<div class="signature highlight"><pre><span></span><code><span class="n">parse</span><span class="p">(</span><span class="n">words</span><span class="p">,</span> <span class="n">upos</span><span class="p">,</span> <span class="n">feats</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">probs</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 </code></pre></div>
-<p>Вершина и связь каждого слова предложения в том же порядке; у пустого предложения - пустой список. Слова приходят уже с частью речи и признаками в разметке UD - как их ставит ruMorph. Часть речи - одна из 17 частей речи UD заглавными буквами (<code>NOUN</code>, <code>VERB</code>, <code>X</code>): с другими тегами, например строчными или OpenCorpora, модель разбирала бы почти наугад, поэтому они - ошибка. Признаки - запись CoNLL-U (<code>Case=Nom|Number=Sing</code>) или словарь, как <code>feats</code> у разбора ruMorph; <code>_</code>, пустая строка, пустой словарь или <code>None</code> - без признаков. Незнакомые модели признаки пропускаются. Разбор идет без GIL.</p>
+<p>Вершина и связь каждого слова предложения в том же порядке; у пустого предложения - пустой список. Слова приходят уже с частью речи и признаками в разметке UD - как их ставит ruMorph. Часть речи - одна из 17 частей речи UD заглавными буквами (<code>NOUN</code>, <code>VERB</code>, <code>X</code>): с другими тегами, например строчными или OpenCorpora, модель разбирала бы почти наугад, поэтому они - ошибка. Признаки - запись CoNLL-U (<code>Case=Nom|Number=Sing</code>) или словарь, как <code>feats</code> у разбора ruMorph; <code>_</code>, пустая строка, пустой словарь или <code>None</code> - без признаков. Незнакомые модели признаки пропускаются. Признаки нужны полные, как их ставит ruMorph: без признаков LAS на dev ниже на 5,7 пункта, с одними падежом, родом и числом - на 3,2, без вида у глагола - на 2,2. Разбор идет без GIL.</p>
 <table>
 <thead>
 <tr>
@@ -996,20 +1113,29 @@
 <td style="text-align: left;"><code>Iterable[str \| Mapping[str, str] \| None]</code></td>
 <td style="text-align: left;">Признаки UD каждого слова</td>
 </tr>
+<tr>
+<td style="text-align: left;"><code>probs</code></td>
+<td style="text-align: left;"><code>bool</code></td>
+<td style="text-align: left;">Добавить <a href="#probs">вероятности</a> вершины и типа связи: четверки вместо пар</td>
+</tr>
 </tbody>
 </table>
 <p>Исключения:</p>
 <ul>
 <li><code>ValueError</code> - длины <code>words</code>, <code>upos</code> и <code>feats</code> не совпадают или часть речи не из 17 частей речи UD;</li>
-<li><code>TypeError</code> - вход не набор строк (строка вместо списка тоже ошибка).</li>
+<li><code>TypeError</code> - вход не набор строк (строка вместо списка тоже ошибка) или <code>probs</code> не bool.</li>
 </ul>
-<div class="tabbed-set tabbed-alternate" data-tabs="4:2"><input checked="checked" id="__tabbed_4_1" name="__tabbed_4" type="radio" /><input id="__tabbed_4_2" name="__tabbed_4" type="radio" /><div class="tabbed-labels"><label for="__tabbed_4_1">Код</label><label for="__tabbed_4_2">Результат</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="5:2"><input checked="checked" id="__tabbed_5_1" name="__tabbed_5" type="radio" /><input id="__tabbed_5_2" name="__tabbed_5" type="radio" /><div class="tabbed-labels"><label for="__tabbed_5_1">Код</label><label for="__tabbed_5_2">Результат</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <div class="highlight"><pre><span></span><code><span class="n">parser</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span>
     <span class="p">[</span><span class="s2">"Я"</span><span class="p">,</span> <span class="s2">"читаю"</span><span class="p">,</span> <span class="s2">"книгу"</span><span class="p">],</span>
     <span class="p">[</span><span class="s2">"PRON"</span><span class="p">,</span> <span class="s2">"VERB"</span><span class="p">,</span> <span class="s2">"NOUN"</span><span class="p">],</span>
-    <span class="p">[</span><span class="s2">"Case=Nom|Number=Sing|Person=1"</span><span class="p">,</span> <span class="s2">"Aspect=Imp|Tense=Pres"</span><span class="p">,</span> <span class="s2">"Case=Acc|Number=Sing"</span><span class="p">],</span>
+    <span class="p">[</span>
+        <span class="s2">"Case=Nom|Number=Sing|Person=1|PronType=Prs"</span><span class="p">,</span>
+        <span class="s2">"Aspect=Imp|Mood=Ind|Number=Sing|Person=1|Tense=Pres|VerbForm=Fin|Voice=Act"</span><span class="p">,</span>
+        <span class="s2">"Animacy=Inan|Case=Acc|Gender=Fem|Number=Sing"</span><span class="p">,</span>
+    <span class="p">],</span>
 <span class="p">)</span>
 </code></pre></div>
 </div>
@@ -1020,7 +1146,7 @@
 </div>
 </div>
 <p>Если текст уже поделен на слова, морфологию им ставит ruMorph с контекстом: первым у каждого слова идет разбор, который выбрала его контекстная модель.</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="5:2"><input checked="checked" id="__tabbed_5_1" name="__tabbed_5" type="radio" /><input id="__tabbed_5_2" name="__tabbed_5" type="radio" /><div class="tabbed-labels"><label for="__tabbed_5_1">Код</label><label for="__tabbed_5_2">Результат</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="6:2"><input checked="checked" id="__tabbed_6_1" name="__tabbed_6" type="radio" /><input id="__tabbed_6_2" name="__tabbed_6" type="radio" /><div class="tabbed-labels"><label for="__tabbed_6_1">Код</label><label for="__tabbed_6_2">Результат</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">rumorph</span><span class="w"> </span><span class="kn">import</span> <span class="n">Analyzer</span>
@@ -1037,11 +1163,11 @@
 </div>
 </div>
 <h3 id="parse_many">Разбор многих предложений<a class="headerlink" href="#parse_many" title="Permanent link">&para;</a></h3>
-<div class="signature highlight"><pre><span></span><code><span class="n">parse_many</span><span class="p">(</span><span class="n">sentences</span><span class="p">)</span>
+<div class="signature highlight"><pre><span></span><code><span class="n">parse_many</span><span class="p">(</span><span class="n">sentences</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">probs</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 </code></pre></div>
-<p>То же, что <code>parse</code> для каждого предложения, но быстрее: предложения близкой длины разбираются по четыре сразу. Предложение - тройка (формы, части речи, признаки). Разбор идет без GIL кусками по 256 предложений, между ними срабатывает Ctrl+C.</p>
-<p>Исключения: <code>ValueError</code> - у предложения не три набора, их длины не совпадают или часть речи не из 17 частей речи UD; <code>TypeError</code> - вход не набор строк.</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="6:2"><input checked="checked" id="__tabbed_6_1" name="__tabbed_6" type="radio" /><input id="__tabbed_6_2" name="__tabbed_6" type="radio" /><div class="tabbed-labels"><label for="__tabbed_6_1">Код</label><label for="__tabbed_6_2">Результат</label></div>
+<p>То же, что <code>parse</code> для каждого предложения, но быстрее: предложения близкой длины разбираются по четыре сразу. Предложение - тройка (формы, части речи, признаки); <code>probs=True</code> добавляет <a href="#probs">вероятности</a>, как у <code>parse</code>. Разбор идет без GIL кусками по 256 предложений, между ними срабатывает Ctrl+C.</p>
+<p>Исключения: <code>ValueError</code> - у предложения не три набора, их длины не совпадают или часть речи не из 17 частей речи UD; <code>TypeError</code> - вход не набор строк или <code>probs</code> не bool.</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="7:2"><input checked="checked" id="__tabbed_7_1" name="__tabbed_7" type="radio" /><input id="__tabbed_7_2" name="__tabbed_7" type="radio" /><div class="tabbed-labels"><label for="__tabbed_7_1">Код</label><label for="__tabbed_7_2">Результат</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <div class="highlight"><pre><span></span><code><span class="n">parser</span><span class="o">.</span><span class="n">parse_many</span><span class="p">(</span>
@@ -1058,10 +1184,30 @@
 </div>
 </div>
 </div>
+<h2 id="probs">Вероятности<a class="headerlink" href="#probs" title="Permanent link">&para;</a></h2>
+<p>С <code>probs=True</code> у каждого слова, кроме вершины и связи, - две вероятности по модели: <code>head_prob</code> - вершины среди всех слов предложения и корня (у предложений длиннее 1024 слов - среди кандидатов <a href="#tree">окна</a> и вершины, которую назначила сборка дерева), <code>deprel_prob</code> - типа связи при этой вершине среди связей, кроме <code>root</code>; связи <code>root</code> у корня и <code>vocative</code> у упоминания <code>@имя</code> в начале предложения ставятся по <a href="#tree">правилу</a>, и их вероятность - 1. Их произведение - вероятность того, что связь верна целиком. Вероятности отличают надежные связи от сомнительных: на dev Taiga, GSD и SynTagRus у слов с <code>head_prob</code> от 0,99 (52-68 % слов) вершина верна у 98-99 %, а ниже 0,5 (3-8 % слов) - примерно у 40 %. Вероятности локальные - по слову, а не по дереву, - и немного завышены: средняя <code>head_prob</code> выше доли верных вершин на 2-5 пунктов, а их произведение - выше доли верных связей на 3-8 пунктов.</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="8:2"><input checked="checked" id="__tabbed_8_1" name="__tabbed_8" type="radio" /><input id="__tabbed_8_2" name="__tabbed_8" type="radio" /><div class="tabbed-labels"><label for="__tabbed_8_1">Код</label><label for="__tabbed_8_2">Результат</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="n">words</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"Я"</span><span class="p">,</span> <span class="s2">"видел"</span><span class="p">,</span> <span class="s2">"девочку"</span><span class="p">,</span> <span class="s2">"с"</span><span class="p">,</span> <span class="s2">"биноклем"</span><span class="p">,</span> <span class="s2">"."</span><span class="p">]</span>
+<span class="n">best</span> <span class="o">=</span> <span class="p">[</span><span class="n">analyses</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">analyses</span> <span class="ow">in</span> <span class="n">Analyzer</span><span class="p">()</span><span class="o">.</span><span class="n">analyze_sentence</span><span class="p">(</span><span class="n">words</span><span class="p">)]</span>
+<span class="n">relations</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">words</span><span class="p">,</span> <span class="p">[</span><span class="n">a</span><span class="o">.</span><span class="n">pos</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">best</span><span class="p">],</span> <span class="p">[</span><span class="n">a</span><span class="o">.</span><span class="n">feats</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">best</span><span class="p">],</span> <span class="n">probs</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="p">[</span>
+    <span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="n">head</span><span class="p">,</span> <span class="n">deprel</span><span class="p">,</span> <span class="nb">round</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="nb">round</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">word</span><span class="p">,</span> <span class="p">(</span><span class="n">head</span><span class="p">,</span> <span class="n">deprel</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">q</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">words</span><span class="p">,</span> <span class="n">relations</span><span class="p">)</span>
+<span class="p">]</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code>[('Я', 2, 'nsubj', 1.0, 1.0), ('видел', 0, 'root', 1.0, 1.0), ('девочку', 2, 'obj', 1.0, 1.0), ('с', 5, 'case', 1.0, 1.0), ('биноклем', 2, 'obl', 0.57, 1.0), ('.', 2, 'punct', 1.0, 1.0)]
+</code></pre></div>
+</div>
+</div>
+</div>
 <h2 id="tree">Дерево разбора<a class="headerlink" href="#tree" title="Permanent link">&para;</a></h2>
-<p>У каждого слова одна вершина, корень в предложении один, циклов нет; непроективные деревья (связи, которые пересекаются) допустимы. Анализатор выбирает дерево с наибольшей суммой оценок вершин (алгоритм Чу - Лю - Эдмондса). У вырожденных предложений, где лучшие вершины дают больше 16 циклов или 8 кандидатов в корень, дерево собирается быстрее: лишние корни и узлы циклов подвешиваются к лучшему корню. Так же собирается дерево предложений длиннее 1024 слов - например, текста без знаков препинания, который сегментатор не делит на предложения; вершина слова в нем ищется среди 64 слов с каждой стороны и корня, поэтому время разбора растет с длиной линейно. Типы связей - с подтипами, как в разметке UD (<code>nsubj:pass</code>, <code>obl:tmod</code>); связь <code>root</code> - только у корня; оценка CoNLL 2018 сравнивает тип без подтипа.</p>
+<p>У каждого слова одна вершина, корень в предложении один, циклов нет; непроективные деревья (связи, которые пересекаются) допустимы. Анализатор выбирает дерево с наибольшей суммой оценок вершин (алгоритм Чу - Лю - Эдмондса). У вырожденных предложений, где лучшие вершины дают больше 16 циклов или 8 кандидатов в корень, дерево собирается быстрее: лишние корни и узлы циклов подвешиваются к лучшему корню. Так же собирается дерево предложений длиннее 1024 слов - например, текста без знаков препинания, который сегментатор не делит на предложения; вершина слова в нем ищется среди 64 слов с каждой стороны и корня, поэтому время разбора растет с длиной линейно. Типы связей - с подтипами, как в разметке UD (<code>nsubj:pass</code>, <code>obl:tmod</code>); связь <code>root</code> - только у корня; оценка CoNLL 2018 сравнивает тип без подтипа. Упоминание <code>@имя</code> в начале предложения, если оно не корень, - обращение к корню предложения (<code>vocative</code>), как его размечает UD: в обучающих трибанках таких упоминаний мало, и модель сама их почти не узнает.</p>
 <h2 id="threads">Потоки и процессы<a class="headerlink" href="#threads" title="Permanent link">&para;</a></h2>
-<p>Анализатор не меняется при разборе: один анализатор можно разделять между потоками, а разбор идет без GIL, поэтому потоки разбирают параллельно. На Python 3.14t и 3.15t без GIL модуль GIL не включает. Анализатор переносится в другой процесс через pickle: сохраняется абсолютный путь к модели или признак модели пакета. <code>copy.copy</code> и <code>copy.deepcopy</code> возвращают тот же объект. Анализаторы равны, если модель у них из одного файла или обе - модель пакета; на анализатор можно держать слабую ссылку (<code>weakref</code>).</p>
+<p>Анализатор не меняется при разборе: один анализатор можно разделять между потоками, а разбор идет без GIL, поэтому потоки разбирают параллельно. На Python 3.14t и 3.15t без GIL модуль GIL не включает. Анализатор переносится в другой процесс через pickle: сохраняется абсолютный путь к модели или признак модели пакета. <code>copy.copy</code> и <code>copy.deepcopy</code> возвращают тот же объект. Анализаторы равны, если модель у них из одного файла (в том числе по другому пути или ссылке) и он не менялся между их созданием, или обе - модель пакета; на анализатор можно держать слабую ссылку (<code>weakref</code>).</p>
 
 
 
