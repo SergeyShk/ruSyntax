@@ -63,7 +63,7 @@ Splits the text into sentences and words with the [anySeg](https://github.com/Se
 | `segmenter` | `anyseg.Segmenter` | `None` | A segmenter or an object with the `segment` method; by default `Segmenter("ru")` |
 | `analyzer` | `rumorph.Analyzer` | `None` | A morphological analyzer or an object with the `annotate` method; by default `Analyzer()` |
 
-Exceptions: `TypeError` - the text is not a string, the segmenter has no `segment` method or the analyzer has no `annotate` method.
+Exceptions: `TypeError` - the text is not a string, the segmenter has no `segment` method, `segment` returned no document or the analyzer has no `annotate` method; `ValueError` - the analyzer gave the words no parts of speech.
 
 === "Code"
 
@@ -140,7 +140,7 @@ Exceptions:
 parse(words, upos, feats, *, probs=False)
 ```
 
-The head and relation of every word of the sentence in the same order; an empty sentence gives an empty list. The words come with their part of speech and features in the UD annotation - as ruMorph gives them. The part of speech is one of the 17 UD parts of speech in capitals (`NOUN`, `VERB`, `X`): with other tags, lowercase or OpenCorpora ones for example, the model would parse almost at random, so they are an error. The features are a CoNLL-U field (`Case=Nom|Number=Sing`) or a dictionary, like `feats` of a ruMorph analysis; `_`, an empty string, an empty dictionary or `None` mean no features. Features unknown to the model are skipped. Parsing runs without the GIL.
+The head and relation of every word of the sentence in the same order; an empty sentence gives an empty list. The words come with their part of speech and features in the UD annotation - as ruMorph gives them. The part of speech is one of the 17 UD parts of speech in capitals (`NOUN`, `VERB`, `X`): with other tags, lowercase or OpenCorpora ones for example, the model would parse almost at random, so they are an error. The features are a CoNLL-U field (`Case=Nom|Number=Sing`) or a dictionary, like `feats` of a ruMorph analysis; `_`, an empty string, an empty dictionary or `None` mean no features. Features unknown to the model are skipped. The features should be complete, as ruMorph gives them: without features LAS on dev is 5.7 points lower, with only case, gender and number 3.2 lower, without the aspect of a verb 2.2 lower. Parsing runs without the GIL.
 
 | Parameter | Type | Description |
 | :-------- | :--- | :---------- |
@@ -160,7 +160,11 @@ Exceptions:
     parser.parse(
         ["Я", "читаю", "книгу"],
         ["PRON", "VERB", "NOUN"],
-        ["Case=Nom|Number=Sing|Person=1", "Aspect=Imp|Tense=Pres", "Case=Acc|Number=Sing"],
+        [
+            "Case=Nom|Number=Sing|Person=1|PronType=Prs",
+            "Aspect=Imp|Mood=Ind|Number=Sing|Person=1|Tense=Pres|VerbForm=Fin|Voice=Act",
+            "Animacy=Inan|Case=Acc|Gender=Fem|Number=Sing",
+        ],
     )
     ```
 
@@ -217,7 +221,7 @@ Exceptions: `ValueError` - a sentence is not three collections, their lengths di
 
 ## Probabilities { #probs }
 
-With `probs=True` every word has, besides its head and relation, two probabilities from the model: `head_prob` of the head among all the words of the sentence and the root (among the candidates of the [window](#tree) in a sentence longer than 1024 words), and `deprel_prob` of the relation given this head; the `root` relation of the root and the `vocative` relation of a mention `@name` at the start of a sentence are set by the [rule](#tree), and their probability is 1. Their product is the probability that the relation is right as a whole. The probabilities tell reliable relations from doubtful ones: on dev Taiga, GSD and SynTagRus the head is right for 97-99 % of the words with `head_prob` from 0.99 (52-68 % of the words), and for about 40 % below 0.5 (3-8 % of the words). The probabilities are local - per word, not per tree - and slightly high: the mean `head_prob` is 2-5 points above the share of right heads.
+With `probs=True` every word has, besides its head and relation, two probabilities from the model: `head_prob` of the head among all the words of the sentence and the root (in a sentence longer than 1024 words, among the candidates of the [window](#tree) and the head given by building the tree), and `deprel_prob` of the relation given this head among the relations other than `root`; the `root` relation of the root and the `vocative` relation of a mention `@name` at the start of a sentence are set by the [rule](#tree), and their probability is 1. Their product is the probability that the relation is right as a whole. The probabilities tell reliable relations from doubtful ones: on dev Taiga, GSD and SynTagRus the head is right for 98-99 % of the words with `head_prob` from 0.99 (52-68 % of the words), and for about 40 % below 0.5 (3-8 % of the words). The probabilities are local - per word, not per tree - and slightly high: the mean `head_prob` is 2-5 points above the share of right heads, and their product 3-8 points above the share of right relations.
 
 === "Code"
 
