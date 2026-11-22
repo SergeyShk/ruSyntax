@@ -124,7 +124,7 @@ The code is distributed under the [MIT](https://github.com/SergeyShk/ruSyntax/bl
 
 ## Citation
 
-If you use **ruSyntax** in research or software, please cite it with the following BibTeX entry - citations help the development and support of the project. The same metadata is in [CITATION.cff](https://github.com/SergeyShk/ruSyntax/blob/master/CITATION.cff), which GitHub shows under the "Cite this repository" button. The Zenodo concept DOI [10.5281/zenodo.24384006](https://doi.org/10.5281/zenodo.24384006) resolves to all versions of the library; the DOI of a specific version is on its release page.
+If you use **ruSyntax** in research or software, please cite it with the following BibTeX entry - citations help the development and support of the project. The same metadata is in [CITATION.cff](https://github.com/SergeyShk/ruSyntax/blob/master/CITATION.cff), which GitHub shows under the "Cite this repository" button. The Zenodo concept DOI [10.5281/zenodo.24384006](https://doi.org/10.5281/zenodo.24384006) resolves to all versions of the library; the DOI of a specific version is on its Zenodo page.
 
 ```bibtex
 @software{ruSyntax,

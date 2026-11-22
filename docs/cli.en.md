@@ -38,7 +38,7 @@ In Windows PowerShell 5.1 the `>` redirection and a pipeline (`Get-Content text.
 ## Input { #input }
 
 - `text` - text: a blank line ends a paragraph. The anySeg segmenter finds the tokens and the sentences by the Universal Dependencies conventions the ruMorph and ruSyntax models are trained on; a sentence may go across a line break. A paragraph without blank lines longer than 256 KB (a file with a sentence per line, a single long line) is cut by anySeg into pieces at sentence boundaries: the memory does not grow with the input, and the sentence numbers and the paragraph go on across the pieces; a sentence longer than 256 KB is cut.
-- `conllu` - [CoNLL-U](https://universaldependencies.org/format.html) with parts of speech (UPOS) and features (FEATS): the HEAD and DEPREL columns are filled, and the other columns, the comments, multiword tokens and empty nodes stay as they are (the DEPS column does not change either). A part of speech is one of the 17 UD parts of speech in capitals. A sentence where no word has a part of speech goes through ruMorph first: LEMMA, UPOS and FEATS are filled, as by the `rumorph -i conllu` command; a part of speech on some words of a sentence but not on all is an error.
+- `conllu` - [CoNLL-U](https://universaldependencies.org/format.html) with parts of speech (UPOS) and features (FEATS): the HEAD and DEPREL columns are filled, and the other columns, the comments, multiword tokens and empty nodes stay as they are (the DEPS column does not change either). A part of speech is one of the 17 UD parts of speech in capitals. A sentence where no word has a part of speech goes through ruMorph first: LEMMA, UPOS and FEATS are filled, as by the `rumorph -i conllu` command; a part of speech on some words of a sentence but not on all is an error. The file is read as by `anyseg.read_conllu`: the word IDs go in order, a multiword token has all its words, the forms agree with the comment `text` if there is one, and a sentence has words - this is stricter than `rumorph -i conllu`. At a wrong line parsing of the file stops: the sentences before it are written, and the next files are parsed.
 
 ``` bash
 printf '1\tМама\t_\tNOUN\t_\tCase=Nom\t_\t_\t_\t_\n2\tспит\t_\tVERB\t_\t_\t_\t_\t_\t_\n' | rusyntax -i conllu
@@ -49,7 +49,7 @@ printf '1\tМама\t_\tNOUN\t_\tCase=Nom\t_\t_\t_\t_\n2\tспит\t_\tVERB\t_\t
 2	спит	_	VERB	_	_	0	root	_	_
 ```
 
-Parsing with your own parts of speech and features shows how the parser does with perfect morphology, but it is trained on the ruMorph annotation and is most accurate with it. To replace the morphology of a CoNLL-U file with the ruMorph annotation and parse it, pipe the commands:
+The model is trained on the ruMorph annotation: with gold parts of speech and features LAS is about 1 point higher, and with the tags of other taggers lower (on test: Stanza 0.7, UDPipe 1 4, spaCy 6 points lower); the features should be complete. To replace the morphology of a CoNLL-U file with the ruMorph annotation and parse it, pipe the commands:
 
 ``` bash
 rumorph -i conllu -f conllu gold.conllu | rusyntax -i conllu > parsed.conllu
@@ -57,7 +57,7 @@ rumorph -i conllu -f conllu gold.conllu | rusyntax -i conllu > parsed.conllu
 
 ## Output { #output }
 
-CoNLL-U as anySeg writes it. For the `text` input it is that of the `rumorph -f conllu` command with HEAD and DEPREL filled: a file starts with the comment `newdoc`, a paragraph with `newpar`, a sentence has the comments `sent_id` (numbered across all the files) and `text`; MISC has `SpaceAfter=No` on a token with no space after it in its paragraph and `SpacesAfter` where the space is not a single one. For the `conllu` input a sentence is written as it was read, with the new heads and relations. Lines end with LF, the text is in UTF-8.
+CoNLL-U as anySeg writes it. For the `text` input it is that of the `rumorph -f conllu` command with HEAD and DEPREL filled: a file starts with the comment `newdoc`, a paragraph with `newpar`, a sentence has the comments `sent_id` (numbered across all the files) and `text`; MISC has `SpaceAfter=No` on a token with no space after it in its paragraph and `SpacesAfter` where the space is not a single one; the indent of a paragraph is `SpacesBefore` of its first token (the rumorph 0.7 command does not write the indent). For the `conllu` input a sentence is written as it was read, with the new heads and relations. Lines end with LF, the text is in UTF-8.
 
 ## Exit codes { #exit-codes }
 

@@ -1,7 +1,9 @@
 import copy
+import os
 import pickle
 import re
 import shutil
+import sys
 import threading
 import weakref
 import zlib
@@ -121,6 +123,16 @@ def test_parse_probs(parser):
     upos = ["PRON", "VERB", "NOUN", "ADP", "NOUN"]
     feats = ["Case=Nom", "Tense=Past", "Case=Acc", None, "Case=Ins"]
     assert parser.parse(words, upos, feats, probs=True)[4][2] < 0.9
+
+
+def test_probs_type(parser):
+    for value in (1, "yes"):
+        name = type(value).__name__
+        with pytest.raises(TypeError, match=f"Параметр probs должен быть bool, а не {name}"):
+            parser.parse(WORDS, UPOS, FEATS, probs=value)
+        with pytest.raises(TypeError, match="Параметр probs должен быть bool"):
+            parser.parse_many([(WORDS, UPOS, FEATS)], probs=value)
+    assert parser.parse(WORDS, UPOS, FEATS, probs=False) == parser.parse(WORDS, UPOS, FEATS)
 
 
 def test_parse_many_matches_parse(parser):
@@ -363,6 +375,13 @@ def test_parse_text_with_own_tools(parser):
     ):
         parser.parse_text(text, analyzer=segmenter)
 
+    class Wrong:
+        def segment(self, text):
+            return text
+
+    with pytest.raises(TypeError, match="segment должен вернуть документ anySeg, а не str"):
+        parser.parse_text(text, segmenter=Wrong())
+
 
 def test_model_from_path(tmp_path, parser):
     custom = Parser(MODEL)
@@ -446,6 +465,19 @@ def test_equality_and_weakref(tmp_path, parser):
     assert parser != "Parser()"
     assert pickle.loads(pickle.dumps(parser)) == parser
     assert weakref.ref(parser)() is parser
+    # Другой путь к тому же файлу и символьная ссылка - та же модель
+    (tmp_path / "x").mkdir()
+    other = Parser(tmp_path / "x" / ".." / "model.bin")
+    assert other == Parser(model) and hash(other) == hash(Parser(model))
+    if sys.platform != "win32":
+        (tmp_path / "link.bin").symlink_to(model)
+        assert Parser(tmp_path / "link.bin") == Parser(model)
+        os.link(model, tmp_path / "hard.bin")
+        assert Parser(tmp_path / "hard.bin") == Parser(model)
+    # Измененный файл - другая модель
+    before = Parser(model)
+    os.utime(model, (1, 1))
+    assert Parser(model) != before
 
 
 def test_rumorph_tags_match_training():

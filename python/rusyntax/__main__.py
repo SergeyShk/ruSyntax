@@ -61,6 +61,8 @@ UPOS = frozenset((
     "PART", "PRON", "PROPN", "PUNCT", "SCONJ", "SYM", "VERB", "X",
 ))  # fmt: skip
 SENT_ID = re.compile(r"^# sent_id = (\d+)$", re.MULTILINE)
+# Концы строк, как у команд anyseg и rumorph: LF, CR и CRLF
+LINE_END = re.compile(r"\r\n|\r|\n")
 CONLLU_ERROR = re.compile(r"line (\d+): (.*)", re.DOTALL)
 # Ошибки чтения CoNLL-U anySeg по-русски; незнакомая остается как есть
 CONLLU_MESSAGES = [
@@ -296,7 +298,9 @@ class Input:
         Вывод:
             Iterator[tuple[int, str] | None]: Номер и строка или None
         """
-        rest, number = "", 0
+        # Начало незаконченной строки - кусками: длинная строка склеивается один раз
+        pending: list[str] = []
+        number, start = 0, True
         # Кусок может кончиться посреди символа
         decoder = codecs.getincrementaldecoder("utf-8")()
         while True:
@@ -305,14 +309,27 @@ class Input:
             if not chunk:
                 break
             data = decoder.decode(chunk)
-            if number == 0 and not rest:
-                data = data.removeprefix("\ufeff")
-            *complete, rest = (rest + data).split("\n")
+            if start and data:
+                data, start = data.removeprefix("\ufeff"), False
+            pending.append(data)
+            if not LINE_END.search(data):
+                continue
+            text, held = "".join(pending), ""
+            # CR в конце куска может оказаться началом CRLF: ждет следующего куска
+            if text.endswith("\r"):
+                text, held = text[:-1], "\r"
+            *complete, rest = LINE_END.split(text)
+            pending = [rest + held] if rest or held else []
             for line in complete:
                 number += 1
-                yield number, line.removesuffix("\r")
+                yield number, line
+        # В остатке может быть удержанный CR, за которым пришла последняя строка без конца
+        *complete, rest = LINE_END.split("".join(pending))
+        for line in complete:
+            number += 1
+            yield number, line
         if rest:
-            yield number + 1, rest.removesuffix("\r")
+            yield number + 1, rest
 
 
 def _boundary(data: bytes) -> int:
@@ -547,7 +564,11 @@ def _locate(blocks: list[Block], error: ValueError) -> tuple[int, InputError]:
     message = match[2] if match else str(error)
     for pattern, russian in CONLLU_MESSAGES:
         message = pattern.sub(russian, message)
-    return index, InputError(blocks[index].start + line - first, message)
+    # Ошибку предложения целиком anySeg ставит на пустую строку после него: номер - его первая строка
+    offset = line - first
+    if offset >= len(blocks[index].lines):
+        offset = 0
+    return index, InputError(blocks[index].start + offset, message)
 
 
 def run(args: Sequence[str], stdin: _Raw | None, stdout: BinaryIO, stderr: TextIO) -> int:
@@ -758,10 +779,31 @@ def main() -> NoReturn:
     # Без консоли (pythonw) стандартных потоков нет
     stdin = getattr(sys.stdin, "buffer", None)
     stdout = getattr(sys.stdout, "buffer", None) or io.BytesIO()
-    stderr = sys.stderr or io.StringIO()
+    stderr: TextIO = sys.stderr or io.StringIO()
+    # Сообщения в файл или канал - в UTF-8, как результат и как у команд anyseg и rumorph (в Windows
+    # Python до 3.15 пишет их в кодировке ANSI); консоль Python и так пишет в Юникоде
+    utf8 = None
+    error_buffer = getattr(sys.stderr, "buffer", None)
+    if (
+        error_buffer is not None
+        and not getattr(error_buffer, "closed", True)
+        and not _isatty(error_buffer)
+    ):
+        # Концы строк - LF, как у команд на Rust, и в Windows
+        stderr = utf8 = io.TextIOWrapper(
+            error_buffer,
+            encoding="utf-8",
+            errors="backslashreplace",
+            newline="\n",
+            write_through=True,
+        )
     try:
         code = run(sys.argv[1:], getattr(stdin, "raw", stdin), stdout, stderr)
     finally:
+        if utf8 is not None:
+            # Обертка не закрывает поток ошибок Python
+            with contextlib.suppress(ValueError):
+                utf8.detach()
         if handler is not None:
             signal.signal(signal.SIGINT, handler)
     sys.exit(code)

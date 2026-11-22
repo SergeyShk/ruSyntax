@@ -367,7 +367,7 @@ jobs:
           uv publish --publish-url https://test.pypi.org/legacy/ --trusted-publishing always "${files[@]}"
 
   pypi:
-    # Версии 0.1.0.devN - только на TestPyPI
+    # Версии X.Y.Z.devN - только на TestPyPI
     if: github.event_name == 'push' && !contains(github.ref_name, '.dev')
     needs: testpypi
     runs-on: ubuntu-latest

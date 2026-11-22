@@ -124,7 +124,7 @@ uv run pre-commit install
 
 ## Цитирование
 
-Если вы используете **ruSyntax** в исследованиях или программах, пожалуйста, цитируйте библиотеку по следующей записи BibTeX - это помогает развитию и поддержке проекта. Те же метаданные лежат в [CITATION.cff](https://github.com/SergeyShk/ruSyntax/blob/master/CITATION.cff) - GitHub показывает их по кнопке «Cite this repository». Concept DOI [10.5281/zenodo.24384006](https://doi.org/10.5281/zenodo.24384006) на Zenodo указывает на все версии библиотеки; DOI конкретной версии - на странице релиза.
+Если вы используете **ruSyntax** в исследованиях или программах, пожалуйста, цитируйте библиотеку по следующей записи BibTeX - это помогает развитию и поддержке проекта. Те же метаданные лежат в [CITATION.cff](https://github.com/SergeyShk/ruSyntax/blob/master/CITATION.cff) - GitHub показывает их по кнопке «Cite this repository». Concept DOI [10.5281/zenodo.24384006](https://doi.org/10.5281/zenodo.24384006) на Zenodo указывает на все версии библиотеки; DOI конкретной версии - на ее странице на Zenodo.
 
 ```bibtex
 @software{ruSyntax,
