@@ -35,7 +35,7 @@ The development environment is described in [CONTRIBUTING.md](https://github.com
 
 ## Rust { #rust }
 
-The parser core is published on crates.io as the [`rusyntax`](https://crates.io/crates/rusyntax) crate, and the API documentation is on [docs.rs](https://docs.rs/rusyntax). The model is not part of the crate: download the [`data/ru-syntax.bin`](https://github.com/SergeyShk/ruSyntax/raw/0.1.0/data/ru-syntax.bin) file of the repository at the tag of the crate version (the model license is CC BY-SA 4.0) and pass its path to `Parser::from_path`.
+The parser core is published on crates.io as the [`rusyntax`](https://crates.io/crates/rusyntax) crate, and the API documentation is on [docs.rs](https://docs.rs/rusyntax). The model is not part of the crate: download the [`data/ru-syntax.bin`](https://github.com/SergeyShk/ruSyntax/raw/0.2.0/data/ru-syntax.bin) file of the repository at the tag of the crate version (the model license is CC BY-SA 4.0) and pass its path to `Parser::from_path`.
 
 ``` bash
 cargo add rusyntax
