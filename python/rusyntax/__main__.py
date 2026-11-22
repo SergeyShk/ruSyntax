@@ -323,8 +323,13 @@ class Input:
             for line in complete:
                 number += 1
                 yield number, line
-        if pending:
-            yield number + 1, "".join(pending).removesuffix("\r")
+        # В остатке может быть удержанный CR, за которым пришла последняя строка без конца
+        *complete, rest = LINE_END.split("".join(pending))
+        for line in complete:
+            number += 1
+            yield number, line
+        if rest:
+            yield number + 1, rest
 
 
 def _boundary(data: bytes) -> int:

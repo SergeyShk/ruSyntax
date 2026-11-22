@@ -236,14 +236,27 @@ def test_conllu_line_ends_and_pieces(parser):
 
 def test_crlf_split_between_reads():
     # Кусок чтения кончается между CR и LF: пустой строки посреди предложения нет
-    pieces = iter([b"# a\r", b"\n1\r", b"\r\n2\r", b"\n\r\n", b"3\r", b""])
+    pieces: list[bytes] = []
 
     class Pieces(command.Input):
         def read(self, size=command.CHUNK, /):
-            return next(pieces, b"")
+            return pieces.pop(0) if pieces else b""
 
-    lines = [item for item in Pieces(io.BytesIO(), lambda: None).lines() if item is not None]
-    assert lines == [(1, "# a"), (2, "1"), (3, ""), (4, "2"), (5, ""), (6, "3")]
+    def lines(*chunks):
+        pieces.extend(chunks)
+        reader = Pieces(io.BytesIO(), lambda: None)
+        return [item for item in reader.lines() if item is not None]
+
+    assert lines(b"# a\r", b"\n1\r", b"\r\n2\r", b"\n\r\n", b"3\r") == [
+        (1, "# a"),
+        (2, "1"),
+        (3, ""),
+        (4, "2"),
+        (5, ""),
+        (6, "3"),
+    ]
+    # Удержанный CR, а за ним - последняя строка без конца строки
+    assert lines(b"1\r", b"2") == [(1, "1"), (2, "2")]
 
 
 def test_encoding(tmp_path):
