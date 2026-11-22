@@ -21,12 +21,12 @@
 
 ```toml
 [dependencies]
-rusyntax = "0.1"
+rusyntax = "0.2"
 ```
 
-Модель в крейт не входит: анализатор читает ее из файла. Модель версии 0.1 - файл
-[`data/ru-syntax.bin`](https://github.com/SergeyShk/ruSyntax/raw/0.1.0/data/ru-syntax.bin) репозитория на теге 0.1.0
-(CC BY-SA 4.0, [LICENSE-MODEL.txt](https://github.com/SergeyShk/ruSyntax/blob/0.1.0/LICENSE-MODEL.txt)).
+Модель в крейт не входит: анализатор читает ее из файла. Модель версии 0.2 - файл
+[`data/ru-syntax.bin`](https://github.com/SergeyShk/ruSyntax/raw/0.2.0/data/ru-syntax.bin) репозитория на теге 0.2.0
+(CC BY-SA 4.0, [LICENSE-MODEL.txt](https://github.com/SergeyShk/ruSyntax/blob/0.2.0/LICENSE-MODEL.txt)).
 
 ## Пример
 

@@ -57,14 +57,14 @@ Parsing the gold tokens of SynTagRus test (157,706 words) in one thread, the bes
 
 | System | Words/s | Loading, s | Memory, MB |
 | :----- | ------: | ---------: | ---------: |
-| ruSyntax | 29,526 | **0.08** | **160** |
+| ruSyntax | 29,526 | **0.08** | **168** |
 | spaCy ru_core_news_sm | 10,368 | 2.00 | 1,007 |
 | UDPipe 1 | 6,318 | 1.73 | 467 |
 | Stanza | 1,098 | 2.84 | 6,638 |
 | Stanza accurate | 428 | 4.66 | 5,993 |
 | Slovnet (Natasha) | 58,583 | 0.27 | 360 |
 
-Slovnet is faster, but picks heads without a tree, gives no morphology and is 6 to 31 points behind in LAS. Stanza accurate was measured on the first 20,006 words. The memory peak depends on the amount of text per call: every system except Stanza accurate got all of SynTagRus test in one call, so its peak is not comparable with the others. Measured on an Apple M3 Pro, Python 3.11, load average 2-3.
+Slovnet is faster, but picks heads without a tree, gives no morphology and is 6 to 31 points behind in LAS. Stanza accurate was measured on the first 20,006 words. The memory peak depends on the amount of text per call: every system except Stanza accurate got all of SynTagRus test in one call, so its peak is not comparable with the others. Measured on an Apple M3 Pro, Python 3.11, load average 2-3; with ruMorph 0.7 ruSyntax 0.2 has the speed and loading time of 0.1 within the noise (alternating runs under the same load), and its memory grew by 8 MB.
 
 ## Reproducing { #reproduce }
 
