@@ -1,34 +1,5 @@
-//! Синтаксический анализатор русского языка: для каждого слова предложения - вершина и тип связи
-//! Universal Dependencies.
-//!
-//! На входе - слова предложения с частью речи и признаками UD (например, от морфологического анализатора
-//! ruMorph), на выходе - номер вершины (0 - корень) и связь каждого слова. Модель - BiLSTM над словами
-//! и их тегами, вершины - биаффинная оценка и дерево максимального веса с одним корнем (у вырожденных
-//! и очень длинных предложений - быстрая починка лучших вершин; у предложений длиннее 1024 слов вершина
-//! ищется среди 64 слов с каждой стороны), связи - по паре «зависимое - вершина».
-//! Модель читается из файла формата ruSyntax ([`Parser::from_bytes`]).
-//!
-//! ```no_run
-//! use rusyntax::{Parser, Word};
-//!
-//! let parser = Parser::from_path("ru-syntax.bin")?;
-//! let words = [
-//!     Word::new("Мама", "NOUN", "Animacy=Anim|Case=Nom|Gender=Fem|Number=Sing"),
-//!     Word::new("мыла", "VERB", "Aspect=Imp|Gender=Fem|Mood=Ind|Number=Sing|Tense=Past|VerbForm=Fin|Voice=Act"),
-//!     Word::new("раму", "NOUN", "Animacy=Inan|Case=Acc|Gender=Fem|Number=Sing"),
-//!     Word::new(".", "PUNCT", "_"),
-//! ];
-//! for (word, relation) in words.iter().zip(parser.parse(&words)) {
-//!     println!("{} -> {} {}", word.form, relation.head, relation.deprel);
-//! }
-//! # Ok::<(), rusyntax::Error>(())
-//! ```
-
+#![doc = include_str!("../README.md")]
 #![cfg_attr(docsrs, feature(doc_cfg))]
-
-#[cfg(doctest)]
-#[doc = include_str!("../README.md")]
-struct ReadmeDoctests;
 
 mod error;
 mod format;
@@ -75,11 +46,11 @@ pub struct Relation<'p> {
     pub deprel: &'p str,
     /// Номер типа связи в [`Parser::relations`]
     pub label: usize,
-    /// Вероятность вершины по модели: softmax оценок всех кандидатов в вершины слова (у предложений
-    /// длиннее 1024 слов - кандидатов в окне)
+    /// Вероятность вершины по модели, от 0 до 1: softmax оценок всех кандидатов в вершины слова (у предложений
+    /// длиннее 1024 слов - 64 слов с каждой стороны, корня и вершины, которую назначила сборка дерева)
     pub head_prob: f32,
-    /// Вероятность типа связи при этой вершине: softmax оценок связей; у связей, которые ставит правило, -
-    /// `root` корня и `vocative` упоминания `@имя` в начале предложения - 1
+    /// Вероятность типа связи при этой вершине, от 0 до 1: softmax оценок связей, кроме `root`; у связей,
+    /// которые ставит правило, - `root` корня и `vocative` упоминания `@имя` в начале предложения - 1
     pub deprel_prob: f32,
 }
 
@@ -387,6 +358,47 @@ mod tests {
             }
         }
         assert!(applied > 0, "правило ни разу не сработало, корней {root}");
+    }
+
+    #[test]
+    fn int8_scale_overflow_is_format_error() {
+        // Множитель строки конечен, а значение после него - нет: 127 × 1e37
+        let mut body = 1u32.to_le_bytes().to_vec();
+        body.extend(1u16.to_le_bytes());
+        body.extend(b"m");
+        body.push(2);
+        body.extend(1u32.to_le_bytes());
+        body.extend(1u32.to_le_bytes());
+        body.extend(1e37f32.to_le_bytes());
+        body.push(127);
+        let mut data = format::MAGIC.to_vec();
+        data.extend(format::FORMAT.to_le_bytes());
+        data.extend(crc32fast::hash(&body).to_le_bytes());
+        data.extend(body);
+        let err = format::read(&data).err().expect("ошибка формата");
+        assert!(
+            err.to_string().contains("бесконечность после множителя"),
+            "{err}"
+        );
+    }
+
+    #[test]
+    fn huge_label_weights_give_finite_probabilities() {
+        // Конечные, но огромные веса связей: оценки уходят в бесконечность, вероятности - нет
+        let mut huge = items(1, 5, false);
+        huge.retain(|(name, _)| *name != "label.weight");
+        huge.push((
+            "label.weight",
+            Item::F32(RELATIONS.len(), 10, vec![3e38; 50]),
+        ));
+        let parser = Parser::from_bytes(&file(&huge)).unwrap();
+        for words in sentences() {
+            let relations = parser.parse(&words);
+            assert_eq!(relations, parser.parse(&words));
+            assert!(relations.iter().all(
+                |r| (0.0..=1.0).contains(&r.deprel_prob) && (0.0..=1.0).contains(&r.head_prob)
+            ));
+        }
     }
 
     #[test]

@@ -1,5 +1,5 @@
 """
-Проверка установленного пакета перед публикацией: разбор текста и команда rusyntax
+Проверка установленного пакета перед публикацией: разбор текста, теги ruMorph и команда rusyntax
 
 Запуск: `python scripts/smoke.py [версия]`; из каталога `scripts` пакет берется установленный,
 а не исходники из репозитория.
@@ -10,6 +10,8 @@ import subprocess
 import sys
 import sysconfig
 from pathlib import Path
+
+import rumorph
 
 import rusyntax
 
@@ -25,6 +27,30 @@ parse = [(word.head, word.deprel) for word in document.words]
 assert parse == [(2, "nsubj"), (0, "root"), (2, "obj"), (2, "punct")], parse
 if sysconfig.get_config_var("Py_GIL_DISABLED"):
     assert not sys._is_gil_enabled()
+# Теги установленного ruMorph - те, на которых обучена модель: в data/check.conllu - теги обучения.
+# Пакет принимает новые 0.x ruMorph, а тест репозитория видит только закрепленный в uv.lock
+sentences: list[list[list[str]]] = [[]]
+check = Path(__file__).parents[1] / "data" / "check.conllu"
+for line in check.read_text(encoding="utf-8").splitlines():
+    if line:
+        sentences[-1].append(line.split("\t"))
+    elif sentences[-1]:
+        sentences.append([])
+analyzer = rumorph.Analyzer()
+total = upos = feats = 0
+for sentence in filter(None, sentences):
+    best = [a[0] for a in analyzer.analyze_sentence([word[1] for word in sentence])]
+    for word, analysis in zip(sentence, best, strict=True):
+        pairs = sorted(analysis.feats.items(), key=lambda pair: pair[0].lower())
+        total += 1
+        upos += word[3] != analysis.pos
+        feats += word[5] != ("|".join(f"{name}={value}" for name, value in pairs) or "_")
+assert total > 4000 and max(upos, feats) <= total * 0.005, (
+    rumorph.__version__,
+    total,
+    upos,
+    feats,
+)
 # Команда: модулем и консольным скриптом рядом с интерпретатором
 result = subprocess.run(
     [sys.executable, "-m", "rusyntax"],

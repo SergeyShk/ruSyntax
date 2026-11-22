@@ -21,8 +21,8 @@ body:
     id: version
     attributes:
       label: Версия ruSyntax
-      description: "`python -c \"import rusyntax; print(rusyntax.__version__)\"`"
-      placeholder: "0.1.0"
+      description: "Вывод `rusyntax -V`: версии ruSyntax, anySeg и ruMorph"
+      placeholder: "rusyntax 0.2.0 (anyseg 0.5.0, rumorph 0.7.0)"
     validations:
       required: true
   - type: input

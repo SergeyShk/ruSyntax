@@ -369,6 +369,10 @@ impl Model {
         let labels = self.relations.len();
         let mut scores = vec![0.0f32; (n - 1) * labels];
         self.label.apply_all(&pairs, &self.label_bias, &mut scores);
+        // Огромные конечные веса дают бесконечные оценки, а с ними - NaN в вероятности связи
+        scores
+            .iter_mut()
+            .for_each(|value| *value = tree::finite(*value));
         (1..n)
             .zip(scores.chunks_exact(labels))
             .map(|(i, row)| {

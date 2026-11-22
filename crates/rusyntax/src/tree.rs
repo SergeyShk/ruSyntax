@@ -18,7 +18,7 @@ const CANDIDATES: usize = 8;
 pub(crate) const WINDOW: usize = 64;
 
 /// Оценка без NaN и бесконечностей: иначе сравнения ломают выбор лучшей вершины
-fn finite(value: f32) -> f32 {
+pub(crate) fn finite(value: f32) -> f32 {
     if value.is_nan() {
         f32::MIN
     } else {

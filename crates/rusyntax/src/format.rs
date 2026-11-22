@@ -98,11 +98,16 @@ impl<'a> Reader<'a> {
                 } else {
                     let scales = self.f32s(rows)?;
                     let values = self.take(size)?;
-                    (values.chunks_exact(cols.max(1)).zip(&scales))
+                    let data: Vec<f32> = (values.chunks_exact(cols.max(1)).zip(&scales))
                         .flat_map(|(row, &scale)| {
                             row.iter().map(move |&q| f32::from(q as i8) * scale)
                         })
-                        .collect()
+                        .collect();
+                    // Конечный множитель строки дает бесконечность, если он больше f32::MAX / 127
+                    if data.iter().any(|value| !value.is_finite()) {
+                        return Err(invalid("в весах int8 бесконечность после множителя строки"));
+                    }
+                    data
                 };
                 Ok(Value::Matrix(Matrix { rows, cols, data }))
             }

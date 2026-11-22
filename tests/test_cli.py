@@ -200,10 +200,10 @@ def test_conllu_errors(tmp_path):
         ("1\tМы\t_\t_\t_\t_\tz\t_\t_\t_\n", 'строка 1: неверная вершина "z"'),
         (
             "1-2" + WORD[1:] + "\n" + WORD + "\n",
-            "строка 3: у многословного токена нет всех его слов",
+            "строка 1: у многословного токена нет всех его слов",
         ),
         ("2-3" + WORD[1:] + "\n", "строка 1: многословный токен 2-3 не начинается со слова 1"),
-        ("# newdoc\n", "строка 2: в предложении нет слов"),
+        ("# newdoc\n", "строка 1: в предложении нет слов"),
         (WORD + "\n# c\n", "строка 2: комментарий после строк токенов"),
         (
             "# text = Кот\n" + WORD + "\n",
@@ -219,6 +219,19 @@ def test_conllu_messages(conllu, message):
     # Сообщения anySeg переводятся: тест падает, если anySeg их изменит
     code, _, err = call("-i", "conllu", data=conllu.encode())
     assert (code, err) == (1, f"rusyntax: -: {message}\n")
+
+
+def test_conllu_line_ends_and_pieces(parser):
+    # Концы строк CR и CRLF, как у текста; строки, разорванные чтением, - те же
+    expected = call("-i", "conllu", data=TAGGED.encode())[1]
+    for end in ("\r", "\r\n"):
+        assert call("-i", "conllu", data=TAGGED.replace("\n", end).encode()) == (0, expected, "")
+    stdout = io.BytesIO()
+    assert command.run(["-i", "conllu"], Chunks(TAGGED.encode(), 7), stdout, io.StringIO()) == 0
+    assert stdout.getvalue().decode() == expected
+    # Очень длинная строка без конца строки - одна ошибка, без квадратичной склейки
+    code, _, err = call("-i", "conllu", data=b"x" * 3_000_000)
+    assert (code, err) == (1, "rusyntax: -: строка 1: нужно 10 столбцов через табуляцию, а не 1\n")
 
 
 def test_encoding(tmp_path):
@@ -444,6 +457,19 @@ def test_main_in_process(tmp_path, monkeypatch, capfd):
     with pytest.raises(SystemExit):
         command.main()
     assert handlers == []
+
+
+def test_messages_in_utf8(tmp_path, monkeypatch):
+    # Поток ошибок не консоль: сообщения - в UTF-8, а не в кодировке потока Python
+    raw = io.BytesIO()
+    monkeypatch.setattr(sys, "stderr", io.TextIOWrapper(raw, encoding="cp1252"))
+    monkeypatch.setattr(sys, "argv", ["rusyntax", str(tmp_path / "нет.txt")])
+    with pytest.raises(SystemExit) as exit_info:
+        command.main()
+    assert exit_info.value.code == 1
+    assert raw.getvalue().decode() == f"rusyntax: {tmp_path / 'нет.txt'}: файл не найден\n"
+    # Поток ошибок Python не закрыт оберткой
+    sys.stderr.write("open")
 
 
 def test_subprocess_smoke():

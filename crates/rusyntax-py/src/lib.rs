@@ -38,43 +38,69 @@ fn bundled() -> PyResult<Arc<rusyntax::Parser>> {
     Ok(PARSER.get_or_init(|| parser).clone())
 }
 
-/// Модель из файла в списке загруженных: файл узнается по пути, размеру и времени изменения
+/// Файл модели: устройство и номер на Unix - жесткая ссылка, символьная ссылка и другой путь к тому же
+/// файлу его не меняют; в других системах - канонический путь
+#[cfg(unix)]
+type FileId = (u64, u64);
+#[cfg(not(unix))]
+type FileId = PathBuf;
+
+#[cfg(unix)]
+fn file_id(_path: &Path, meta: &std::fs::Metadata) -> Option<FileId> {
+    use std::os::unix::fs::MetadataExt;
+    Some((meta.dev(), meta.ino()))
+}
+
+#[cfg(not(unix))]
+fn file_id(path: &Path, _meta: &std::fs::Metadata) -> Option<FileId> {
+    std::fs::canonicalize(path).ok()
+}
+
+/// Модель из файла в списке загруженных: файл узнается по `FileId`, размеру и времени изменения
 struct Loaded {
-    path: PathBuf,
-    len: u64,
-    modified: Option<SystemTime>,
+    key: (FileId, u64, Option<SystemTime>),
     parser: Weak<rusyntax::Parser>,
 }
 
-/// Модели, загруженные в процессе: анализаторы одного файла и копии из pickle делят модель. Список
-/// берется только `try_lock` и только на поиск и запись: если его держит поток, которого после fork
-/// нет, модель просто загружается заново
-static LOADED: Mutex<Vec<Loaded>> = Mutex::new(Vec::new());
+/// Модели, загруженные в процессе: анализаторы одного файла и копии из pickle делят модель, а последняя
+/// загруженная держится и без анализаторов (анализатор в цикле или в задачах пула не читает файл
+/// заново). Список берется только `try_lock` и только на поиск и запись: если его держит поток,
+/// которого после fork нет, модель просто загружается заново
+struct Cache {
+    loaded: Vec<Loaded>,
+    last: Option<Arc<rusyntax::Parser>>,
+}
+
+static LOADED: Mutex<Cache> = Mutex::new(Cache {
+    loaded: Vec::new(),
+    last: None,
+});
 
 /// Модель файла `path`: загруженная в процессе, если файл тот же и не изменился, иначе новая
 fn load(path: &Path) -> Result<Arc<rusyntax::Parser>, rusyntax::Error> {
     let key = (std::fs::metadata(path).ok())
         .filter(std::fs::Metadata::is_file)
-        .map(|meta| (meta.len(), meta.modified().ok()));
-    let same = |entry: &Loaded| key == Some((entry.len, entry.modified)) && entry.path == path;
-    if let Ok(loaded) = LOADED.try_lock()
-        && let Some(parser) = (loaded.iter())
-            .filter(|entry| same(entry))
+        .and_then(|meta| Some((file_id(path, &meta)?, meta.len(), meta.modified().ok())));
+    if let Some(key) = &key
+        && let Ok(cache) = LOADED.try_lock()
+        && let Some(parser) = (cache.loaded.iter())
+            .filter(|entry| entry.key == *key)
             .find_map(|entry| entry.parser.upgrade())
     {
         return Ok(parser);
     }
     let parser = Arc::new(rusyntax::Parser::from_path(path)?);
-    if let Some((len, modified)) = key
-        && let Ok(mut loaded) = LOADED.try_lock()
+    if let Some(key) = key
+        && let Ok(mut cache) = LOADED.try_lock()
     {
-        loaded.retain(|entry| entry.parser.strong_count() > 0 && entry.path != path);
-        loaded.push(Loaded {
-            path: path.to_owned(),
-            len,
-            modified,
+        cache
+            .loaded
+            .retain(|entry| entry.parser.strong_count() > 0 && entry.key.0 != key.0);
+        cache.loaded.push(Loaded {
+            key,
             parser: Arc::downgrade(&parser),
         });
+        cache.last = Some(parser.clone());
     }
     Ok(parser)
 }
@@ -223,6 +249,14 @@ fn feats(value: &Bound<'_, PyAny>) -> PyResult<Vec<String>> {
     })
 }
 
+/// Флаг-параметр: bool (и numpy.bool_), иначе TypeError по-русски
+fn flag(value: Option<&Bound<'_, PyAny>>, name: &str) -> PyResult<bool> {
+    value.map_or(Ok(false), |value| {
+        (value.extract::<bool>())
+            .map_err(|_| type_error(&format!("Параметр {name} должен быть bool"), value))
+    })
+}
+
 /// « предложения 3» - номер предложения в сообщении об ошибке `parse_many`
 fn of_sentence(sentence: Option<usize>) -> String {
     sentence.map_or_else(String::new, |number| format!(" предложения {number}"))
@@ -329,6 +363,8 @@ fn parse_all<'p>(
 struct Parser {
     parser: Arc<rusyntax::Parser>,
     path: Option<PathBuf>,
+    /// Канонический путь к модели для равенства: другой путь или символьная ссылка к тому же файлу
+    canonical: Option<PathBuf>,
     /// Типы связей модели строками Python: связь слова не создается заново
     relations: Vec<Py<PyString>>,
     /// Сегментатор anySeg и анализатор ruMorph для parse_text: создаются при первом вызове
@@ -389,9 +425,12 @@ impl Parser {
         let relations = (parser.relations().iter())
             .map(|relation| PyString::new(py, relation).unbind())
             .collect();
+        let canonical =
+            (path.as_ref()).map(|path| std::fs::canonicalize(path).unwrap_or(path.clone()));
         Ok(Parser {
             parser,
             path,
+            canonical,
             relations,
             tools: OnceLock::new(),
         })
@@ -399,12 +438,12 @@ impl Parser {
 
     /// Анализаторы равны, если модель из одного файла (или обе - модель пакета)
     fn __eq__(&self, other: PyRef<'_, Self>) -> bool {
-        self.path == other.path
+        self.canonical == other.canonical
     }
 
     fn __hash__(&self) -> u64 {
         let mut hasher = DefaultHasher::new();
-        self.path.hash(&mut hasher);
+        self.canonical.hash(&mut hasher);
         hasher.finish()
     }
 
@@ -480,14 +519,15 @@ impl Parser {
     /// Вывод:
     ///     list[tuple[int, str]]: Номер вершины (0 - корень) и тип связи каждого слова; с probs -
     ///         четверки: еще вероятность вершины среди всех слов предложения и корня (у предложений
-    ///         длиннее 1024 слов - среди 64 слов с каждой стороны и корня) и вероятность типа
-    ///         связи при этой вершине (у связей по правилу - root корня и vocative упоминания
-    ///         @имя в начале предложения - 1)
+    ///         длиннее 1024 слов - среди 64 слов с каждой стороны, корня и вершины, которую
+    ///         назначила сборка дерева) и вероятность типа связи при этой вершине среди связей,
+    ///         кроме root (у связей по правилу - root корня и vocative упоминания @имя в начале
+    ///         предложения - 1)
     ///
     /// Исключения:
     ///     ValueError: Если длины words, upos и feats не совпадают или часть речи не из 17
     ///         частей речи UD
-    ///     TypeError: Если вход - не набор строк
+    ///     TypeError: Если вход - не набор строк или probs не bool
     ///
     /// Пример использования:
     ///     >>> parser = Parser()
@@ -496,15 +536,19 @@ impl Parser {
     ///     >>> [(head, deprel, round(p, 3), round(q, 3)) for head, deprel, p, q in
     ///     ...  parser.parse(["Спасибо", "!"], ["INTJ", "PUNCT"], [None, None], probs=True)]
     ///     [(0, 'root', 1.0, 1.0), (1, 'punct', 1.0, 1.0)]
-    #[pyo3(signature = (words, upos, feats, *, probs = false))]
+    #[pyo3(
+        signature = (words, upos, feats, *, probs = None),
+        text_signature = "($self, words, upos, feats, *, probs=False)"
+    )]
     fn parse<'py>(
         &self,
         py: Python<'py>,
         words: &Bound<'py, PyAny>,
         upos: &Bound<'py, PyAny>,
         feats: &Bound<'py, PyAny>,
-        probs: bool,
+        probs: Option<&Bound<'py, PyAny>>,
     ) -> PyResult<Bound<'py, PyList>> {
+        let probs = flag(probs, "probs")?;
         let sentence = sentence(words, upos, feats, None)?;
         let relations = parse_all(py, &self.parser, &[sentence])?;
         self.named(py, relations.first().map_or(&[], Vec::as_slice), probs)
@@ -528,18 +572,22 @@ impl Parser {
     /// Исключения:
     ///     ValueError: Если у предложения не три набора, их длины не совпадают или часть
     ///         речи не из 17 частей речи UD
-    ///     TypeError: Если вход - не набор строк
+    ///     TypeError: Если вход - не набор строк или probs не bool
     ///
     /// Пример использования:
     ///     >>> Parser().parse_many([(["Спасибо", "!"], ["INTJ", "PUNCT"], ["_", "_"])])
     ///     [[(0, 'root'), (1, 'punct')]]
-    #[pyo3(signature = (sentences, *, probs = false))]
+    #[pyo3(
+        signature = (sentences, *, probs = None),
+        text_signature = "($self, sentences, *, probs=False)"
+    )]
     fn parse_many<'py>(
         &self,
         py: Python<'py>,
         sentences: &Bound<'py, PyAny>,
-        probs: bool,
+        probs: Option<&Bound<'py, PyAny>>,
     ) -> PyResult<Vec<Bound<'py, PyList>>> {
+        let probs = flag(probs, "probs")?;
         let items = sentences
             .try_iter()
             .map_err(|_| type_error("Ожидается набор предложений", sentences))?;
@@ -709,8 +757,9 @@ impl Parser {
     ///     anyseg.Document: Документ со столбцами lemma, upos, feats, head и deprel
     ///
     /// Исключения:
-    ///     TypeError: Если текст не строка, у сегментатора нет segment или у анализатора нет
-    ///         annotate
+    ///     TypeError: Если текст не строка, у сегментатора нет segment, segment вернул не
+    ///         документ или у анализатора нет annotate
+    ///     ValueError: Если анализатор не поставил словам части речи
     ///
     /// Пример использования:
     ///     >>> document = Parser().parse_text("Мама мыла раму.")
@@ -756,6 +805,14 @@ impl Parser {
             }
         };
         let document = segmenter.call_method1(intern!(py, "segment"), (text,))?;
+        for name in ["column", "sentences", "set_columns"] {
+            if !document.hasattr(name)? {
+                return Err(type_error(
+                    "segmenter: segment должен вернуть документ anySeg",
+                    &document,
+                ));
+            }
+        }
         analyzer.call_method1(intern!(py, "annotate"), (&document,))?;
         self.annotate(py, &document)?;
         Ok(document)
