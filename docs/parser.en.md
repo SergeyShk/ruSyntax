@@ -4,7 +4,7 @@
 Parser(path=None)
 ```
 
-A dependency parser: for every word of a sentence it finds the head - the word it depends on - and the [Universal Dependencies](https://universaldependencies.org/u/dep/) relation. The head is the number of a word in the sentence starting from 1; the root of the sentence has 0. Without `path` the package [model](model.md) is used: it is built into the module and loaded once per process (about 10 ms), so a new parser is created instantly. Parsers share a model from a file too: while the file does not change, it is loaded once.
+A dependency parser: for every word of a sentence it finds the head - the word it depends on - and the [Universal Dependencies](https://universaldependencies.org/u/dep/) relation. The head is the number of a word in the sentence starting from 1; the root of the sentence has 0. Without `path` the package [model](model.md) is used: it is built into the module and loaded once per process (about 10 ms), so a new parser is created instantly. Parsers share a model from a file too - also by another path or link to the same file: while the file does not change, it is loaded once, and the last loaded one stays in memory without parsers too.
 
 Exceptions:
 
@@ -152,7 +152,7 @@ The head and relation of every word of the sentence in the same order; an empty 
 Exceptions:
 
 - `ValueError` - the lengths of `words`, `upos` and `feats` differ, or a part of speech is not one of the 17 UD parts of speech;
-- `TypeError` - the input is not a collection of strings (a string instead of a list is an error too).
+- `TypeError` - the input is not a collection of strings (a string instead of a list is an error too) or `probs` is not a bool.
 
 === "Code"
 
@@ -200,7 +200,7 @@ parse_many(sentences, *, probs=False)
 
 The same as `parse` for every sentence, but faster: sentences of close lengths are parsed four at a time. A sentence is a triple (forms, parts of speech, features); `probs=True` adds the [probabilities](#probs), as in `parse`. Parsing runs without the GIL in chunks of 256 sentences; Ctrl+C works between them.
 
-Exceptions: `ValueError` - a sentence is not three collections, their lengths differ, or a part of speech is not one of the 17 UD parts of speech; `TypeError` - the input is not a collection of strings.
+Exceptions: `ValueError` - a sentence is not three collections, their lengths differ, or a part of speech is not one of the 17 UD parts of speech; `TypeError` - the input is not a collection of strings or `probs` is not a bool.
 
 === "Code"
 
@@ -247,4 +247,4 @@ Every word has one head, a sentence has one root, and there are no cycles; non-p
 
 ## Threads and processes { #threads }
 
-The parser does not change while parsing: one parser can be shared between threads, and parsing runs without the GIL, so the threads parse in parallel. On Python 3.14t and 3.15t without the GIL the module does not enable the GIL. The parser moves to another process with pickle: the absolute path to the model, or the mark of the package model, is saved. `copy.copy` and `copy.deepcopy` return the same object. Parsers are equal if their model comes from the same file or both use the package model; a parser can be held by a weak reference (`weakref`).
+The parser does not change while parsing: one parser can be shared between threads, and parsing runs without the GIL, so the threads parse in parallel. On Python 3.14t and 3.15t without the GIL the module does not enable the GIL. The parser moves to another process with pickle: the absolute path to the model, or the mark of the package model, is saved. `copy.copy` and `copy.deepcopy` return the same object. Parsers are equal if their model comes from the same file (also by another path or link) that did not change between their creation, or both use the package model; a parser can be held by a weak reference (`weakref`).

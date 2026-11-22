@@ -234,6 +234,18 @@ def test_conllu_line_ends_and_pieces(parser):
     assert (code, err) == (1, "rusyntax: -: строка 1: нужно 10 столбцов через табуляцию, а не 1\n")
 
 
+def test_crlf_split_between_reads():
+    # Кусок чтения кончается между CR и LF: пустой строки посреди предложения нет
+    pieces = iter([b"# a\r", b"\n1\r", b"\r\n2\r", b"\n\r\n", b"3\r", b""])
+
+    class Pieces(command.Input):
+        def read(self, size=command.CHUNK, /):
+            return next(pieces, b"")
+
+    lines = [item for item in Pieces(io.BytesIO(), lambda: None).lines() if item is not None]
+    assert lines == [(1, "# a"), (2, "1"), (3, ""), (4, "2"), (5, ""), (6, "3")]
+
+
 def test_encoding(tmp_path):
     damaged = "Мама мыла раму.\n\n".encode() + b"\xff \xd0\xba\xd0\xbe\xd1\x82\n"
     code, out, err = call(data=damaged)
@@ -470,6 +482,18 @@ def test_messages_in_utf8(tmp_path, monkeypatch):
     assert raw.getvalue().decode() == f"rusyntax: {tmp_path / 'нет.txt'}: файл не найден\n"
     # Поток ошибок Python не закрыт оберткой
     sys.stderr.write("open")
+
+
+def test_closed_stderr(tmp_path, monkeypatch):
+    # Закрытый поток ошибок: сообщение некуда писать, код выхода тот же
+    raw = io.BytesIO()
+    closed = io.TextIOWrapper(raw)
+    raw.close()
+    monkeypatch.setattr(sys, "stderr", closed)
+    monkeypatch.setattr(sys, "argv", ["rusyntax", str(tmp_path / "нет.txt")])
+    with pytest.raises(SystemExit) as exit_info:
+        command.main()
+    assert exit_info.value.code == 1
 
 
 def test_subprocess_smoke():

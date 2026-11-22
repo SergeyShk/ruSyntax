@@ -56,9 +56,20 @@ fn file_id(path: &Path, _meta: &std::fs::Metadata) -> Option<FileId> {
     std::fs::canonicalize(path).ok()
 }
 
-/// Модель из файла в списке загруженных: файл узнается по `FileId`, размеру и времени изменения
+/// Файл модели и его состояние: `FileId`, размер и время изменения
+type FileKey = (FileId, u64, Option<SystemTime>);
+
+/// Ключ файла `path`; `None` - не обычный файл или нет метаданных
+fn file_key(path: &Path) -> Option<FileKey> {
+    let meta = std::fs::metadata(path)
+        .ok()
+        .filter(std::fs::Metadata::is_file)?;
+    Some((file_id(path, &meta)?, meta.len(), meta.modified().ok()))
+}
+
+/// Модель из файла в списке загруженных
 struct Loaded {
-    key: (FileId, u64, Option<SystemTime>),
+    key: FileKey,
     parser: Weak<rusyntax::Parser>,
 }
 
@@ -77,11 +88,8 @@ static LOADED: Mutex<Cache> = Mutex::new(Cache {
 });
 
 /// Модель файла `path`: загруженная в процессе, если файл тот же и не изменился, иначе новая
-fn load(path: &Path) -> Result<Arc<rusyntax::Parser>, rusyntax::Error> {
-    let key = (std::fs::metadata(path).ok())
-        .filter(std::fs::Metadata::is_file)
-        .and_then(|meta| Some((file_id(path, &meta)?, meta.len(), meta.modified().ok())));
-    if let Some(key) = &key
+fn load(path: &Path, key: Option<&FileKey>) -> Result<Arc<rusyntax::Parser>, rusyntax::Error> {
+    if let Some(key) = key
         && let Ok(cache) = LOADED.try_lock()
         && let Some(parser) = (cache.loaded.iter())
             .filter(|entry| entry.key == *key)
@@ -93,11 +101,9 @@ fn load(path: &Path) -> Result<Arc<rusyntax::Parser>, rusyntax::Error> {
     if let Some(key) = key
         && let Ok(mut cache) = LOADED.try_lock()
     {
-        cache
-            .loaded
-            .retain(|entry| entry.parser.strong_count() > 0 && entry.key.0 != key.0);
+        (cache.loaded).retain(|entry| entry.parser.strong_count() > 0 && entry.key.0 != key.0);
         cache.loaded.push(Loaded {
-            key,
+            key: key.to_owned(),
             parser: Arc::downgrade(&parser),
         });
         cache.last = Some(parser.clone());
@@ -363,8 +369,9 @@ fn parse_all<'p>(
 struct Parser {
     parser: Arc<rusyntax::Parser>,
     path: Option<PathBuf>,
-    /// Канонический путь к модели для равенства: другой путь или символьная ссылка к тому же файлу
-    canonical: Option<PathBuf>,
+    /// Файл модели при загрузке - для равенства: другой путь и ссылки к тому же файлу дают тот же ключ,
+    /// измененный файл - другой; `None` - модель пакета или файл без метаданных (тогда - путь)
+    key: Option<FileKey>,
     /// Типы связей модели строками Python: связь слова не создается заново
     relations: Vec<Py<PyString>>,
     /// Сегментатор anySeg и анализатор ruMorph для parse_text: создаются при первом вызове
@@ -416,21 +423,20 @@ impl Parser {
     #[pyo3(signature = (path = None))]
     fn new(py: Python<'_>, path: Option<&Bound<'_, PyAny>>) -> PyResult<Self> {
         let path = path.map(model_path).transpose()?;
+        let key = path.as_deref().and_then(file_key);
         let parser = match &path {
             None => bundled()?,
             Some(path) => py
-                .detach(|| load(path))
+                .detach(|| load(path, key.as_ref()))
                 .map_err(|err| load_error(path, err))?,
         };
         let relations = (parser.relations().iter())
             .map(|relation| PyString::new(py, relation).unbind())
             .collect();
-        let canonical =
-            (path.as_ref()).map(|path| std::fs::canonicalize(path).unwrap_or(path.clone()));
         Ok(Parser {
             parser,
             path,
-            canonical,
+            key,
             relations,
             tools: OnceLock::new(),
         })
@@ -438,12 +444,18 @@ impl Parser {
 
     /// Анализаторы равны, если модель из одного файла (или обе - модель пакета)
     fn __eq__(&self, other: PyRef<'_, Self>) -> bool {
-        self.canonical == other.canonical
+        match (&self.key, &other.key) {
+            (Some(key), Some(other)) => key == other,
+            _ => self.path == other.path,
+        }
     }
 
     fn __hash__(&self) -> u64 {
         let mut hasher = DefaultHasher::new();
-        self.canonical.hash(&mut hasher);
+        match &self.key {
+            Some(key) => key.hash(&mut hasher),
+            None => self.path.hash(&mut hasher),
+        }
         hasher.finish()
     }
 

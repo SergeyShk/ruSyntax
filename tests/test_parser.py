@@ -1,4 +1,5 @@
 import copy
+import os
 import pickle
 import re
 import shutil
@@ -471,6 +472,12 @@ def test_equality_and_weakref(tmp_path, parser):
     if sys.platform != "win32":
         (tmp_path / "link.bin").symlink_to(model)
         assert Parser(tmp_path / "link.bin") == Parser(model)
+        os.link(model, tmp_path / "hard.bin")
+        assert Parser(tmp_path / "hard.bin") == Parser(model)
+    # Измененный файл - другая модель
+    before = Parser(model)
+    os.utime(model, (1, 1))
+    assert Parser(model) != before
 
 
 def test_rumorph_tags_match_training():

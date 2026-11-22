@@ -311,16 +311,20 @@ class Input:
             data = decoder.decode(chunk)
             if start and data:
                 data, start = data.removeprefix("\ufeff"), False
+            pending.append(data)
             if not LINE_END.search(data):
-                pending.append(data)
                 continue
-            *complete, rest = LINE_END.split("".join(pending) + data)
-            pending = [rest] if rest else []
+            text, held = "".join(pending), ""
+            # CR в конце куска может оказаться началом CRLF: ждет следующего куска
+            if text.endswith("\r"):
+                text, held = text[:-1], "\r"
+            *complete, rest = LINE_END.split(text)
+            pending = [rest + held] if rest or held else []
             for line in complete:
                 number += 1
                 yield number, line
         if pending:
-            yield number + 1, "".join(pending)
+            yield number + 1, "".join(pending).removesuffix("\r")
 
 
 def _boundary(data: bytes) -> int:
@@ -775,9 +779,18 @@ def main() -> NoReturn:
     # Python до 3.15 пишет их в кодировке ANSI); консоль Python и так пишет в Юникоде
     utf8 = None
     error_buffer = getattr(sys.stderr, "buffer", None)
-    if error_buffer is not None and not _isatty(error_buffer):
+    if (
+        error_buffer is not None
+        and not getattr(error_buffer, "closed", True)
+        and not _isatty(error_buffer)
+    ):
+        # Концы строк - LF, как у команд на Rust, и в Windows
         stderr = utf8 = io.TextIOWrapper(
-            error_buffer, encoding="utf-8", errors="backslashreplace", write_through=True
+            error_buffer,
+            encoding="utf-8",
+            errors="backslashreplace",
+            newline="\n",
+            write_through=True,
         )
     try:
         code = run(sys.argv[1:], getattr(stdin, "raw", stdin), stdout, stderr)
